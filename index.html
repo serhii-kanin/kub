@@ -1,0 +1,156 @@
+<html>
+<head>
+    <script src="//cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
+</head>
+<body>
+<script>
+    var camera, scene, renderer;
+    var geometry, material, boxes, group, rotationGroup;
+    var mouseX = 0, mouseY = 0;
+
+    var windowHalfX = window.innerWidth / 2;
+    var windowHalfY = window.innerHeight / 2;
+
+    var scale = 0.1;
+    init();
+    animate();
+    var rotatedPosition;
+    var doRotation = true;
+    var rotationAxis;
+
+
+    function init() {
+        document.addEventListener( 'mousemove', onDocumentMouseMove, false );
+
+        camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 );
+        camera.position.z = 1;
+
+        scene = new THREE.Scene();
+
+        geometry = new THREE.BoxGeometry( scale, scale, scale );
+        material = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            vertexColors: THREE.FaceColors
+        });
+
+        group = new THREE.Group();
+        boxes = [];
+
+        var red = new THREE.Color(1, 0, 0);
+        var green = new THREE.Color(0, 1, 0);
+        var blue = new THREE.Color(0, 0, 1);
+        var yellow = new THREE.Color(1, 1, 0);
+        var orange = new THREE.Color(1, 0.5, 0.2);
+        var colors = [red, green, blue, yellow, orange];
+
+        geometry.faces[0].color = colors[0];
+        geometry.faces[1].color = colors[0];
+
+        geometry.faces[2].color = colors[1];
+        geometry.faces[3].color = colors[1];
+
+        geometry.faces[4].color = colors[2];
+        geometry.faces[5].color = colors[2];
+
+        geometry.faces[6].color = colors[3];
+        geometry.faces[7].color = colors[3];
+
+        geometry.faces[8].color = colors[4];
+        geometry.faces[9].color = colors[4];
+
+        var mesh;
+        for(var z = -1; z <=1; z++) {
+            for(var x = -1; x <=1; x++) {
+                for(var y = -1; y <=1; y++) {
+
+                    mesh = new THREE.Mesh( geometry, material );
+                    mesh.position.x += x * (scale + scale * 0.05);
+                    mesh.position.y += y * (scale + scale * 0.05);
+                    mesh.position.z += z * (scale + scale * 0.05);
+
+                    boxes.push({
+                        mesh: mesh
+                    });
+                    scene.add( mesh );
+                }
+            }
+        }
+        scene.add( group );
+
+
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        document.body.appendChild( renderer.domElement );
+    }
+
+    function selectFront() {
+        group.children = [];
+        for(var k in boxes) {
+            if (boxes[k].mesh.position.z > 0) {
+                group.add(boxes[k].mesh);
+            }
+        }
+    }
+
+    function selectLeft() {
+        group.children = [];
+        for(var k in boxes) {
+            if (boxes[k].mesh.position.x < 0) {
+                group.add(boxes[k].mesh);
+            }
+        }
+    }
+
+
+
+    function selectRotation() {
+
+        rotatedPosition = group.rotation[rotationAxis] + 1.57;
+
+        //var selectedRotation = Math.round(Math.random() * 100) % 1;
+        switch(1) {
+            case 0:
+                selectLeft();
+                rotationAxis = 'x';
+                rotatedPosition = group.rotation[rotationAxis] + 1.57;
+            break;
+            case 1:
+                selectFront();
+                rotationAxis = 'z';
+                rotatedPosition = group.rotation[rotationAxis] + 1.57;
+            break;
+        }
+    }
+
+
+    function animate() {
+
+        requestAnimationFrame( animate );
+
+        if (doRotation) {
+            group.rotation[rotationAxis] +=0.1;
+            if (group.rotation[rotationAxis] >= rotatedPosition) {
+                group.rotation[rotationAxis] = rotatedPosition;
+                doRotation = false;
+            }
+        } else {
+            selectRotation();
+            doRotation = true;
+        }
+
+        scene.rotation.y = mouseX/100;
+        scene.rotation.x = mouseY/100;
+
+        renderer.render( scene, camera );
+
+    }
+
+
+    function onDocumentMouseMove( event ) {
+        mouseX = ( event.clientX - windowHalfX );
+        mouseY = ( event.clientY - windowHalfY );
+    }
+
+</script>
+</body>
+</html>
