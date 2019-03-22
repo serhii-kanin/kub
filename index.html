@@ -21,17 +21,12 @@
 
     function init() {
         document.addEventListener( 'mousemove', onDocumentMouseMove, false );
-
+        document.addEventListener( 'mousedown', onDocumentMouseDown, false );
+        document.addEventListener( 'mouseup', onDocumentMouseUp, false );
         camera = new THREE.PerspectiveCamera( 70, window.innerWidth / window.innerHeight, 0.01, 10 );
         camera.position.z = 1;
 
         scene = new THREE.Scene();
-
-        geometry = new THREE.BoxGeometry( scale, scale, scale );
-        material = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            vertexColors: THREE.FaceColors
-        });
 
         group = new THREE.Group();
         boxes = [];
@@ -41,62 +36,155 @@
         var blue = new THREE.Color(0, 0, 1);
         var yellow = new THREE.Color(1, 1, 0);
         var orange = new THREE.Color(1, 0.5, 0.2);
-        var colors = [red, green, blue, yellow, orange];
+        var white = new THREE.Color(1, 1, 1);
 
-        geometry.faces[0].color = colors[0];
-        geometry.faces[1].color = colors[0];
-
-        geometry.faces[2].color = colors[1];
-        geometry.faces[3].color = colors[1];
-
-        geometry.faces[4].color = colors[2];
-        geometry.faces[5].color = colors[2];
-
-        geometry.faces[6].color = colors[3];
-        geometry.faces[7].color = colors[3];
-
-        geometry.faces[8].color = colors[4];
-        geometry.faces[9].color = colors[4];
-
-        var mesh;
         for(var z = -1; z <=1; z++) {
             for(var x = -1; x <=1; x++) {
                 for(var y = -1; y <=1; y++) {
 
-                    mesh = new THREE.Mesh( geometry, material );
-                    mesh.position.x += x * (scale + scale * 0.05);
-                    mesh.position.y += y * (scale + scale * 0.05);
-                    mesh.position.z += z * (scale + scale * 0.05);
+                    var box = {
+                        color: {
+                            top: green,
+                            left: red,
+                            right: white,
+                            back: orange,
+                            bottom: blue,
+                            front: yellow
 
-                    boxes.push({
-                        mesh: mesh
-                    });
-                    scene.add( mesh );
+                        },
+                        position: {
+                            x: x * (scale + scale * 0.05),
+                            y: y * (scale + scale * 0.05),
+                            z: z * (scale + scale * 0.05),
+                        }
+                    };
+
+                    box.mesh = createMesh(box);
+
+                    scene.add(box.mesh);
+                    boxes.push(box);
                 }
             }
         }
+
         scene.add( group );
 
 
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
+        selectRotation();
     }
 
     function selectFront() {
-        group.children = [];
         for(var k in boxes) {
-            if (boxes[k].mesh.position.z > 0) {
+            if (isFront(boxes[k])) {
                 group.add(boxes[k].mesh);
             }
         }
     }
 
+    function createGeometry(colors) {
+        var geometry = new THREE.BoxGeometry( scale, scale, scale );
+
+        geometry.faces[1].color = geometry.faces[0].color = colors.right;
+        geometry.faces[2].color = geometry.faces[3].color = colors.left;
+        geometry.faces[4].color = geometry.faces[5].color = colors.top;
+        geometry.faces[6].color = geometry.faces[7].color = colors.bottom;
+        geometry.faces[8].color = geometry.faces[9].color = colors.front;
+        geometry.faces[10].color = geometry.faces[11].color = colors.back;
+        return geometry;
+    }
+
+    function createMesh(box){
+        var geometry = createGeometry(box.color);
+        var material = new THREE.MeshBasicMaterial({
+            color: 0xffffff,
+            vertexColors: THREE.FaceColors
+        });
+
+        var mesh = new THREE.Mesh( geometry, material);
+        mesh.position.x = box.position.x;
+        mesh.position.y = box.position.y;
+        mesh.position.z = box.position.z;
+
+        return mesh;
+    }
+
+    function resetMeshes(boxes) {
+        group.children = [];
+        group.rotation.x = group.rotation.y = group.rotation.z = 0;
+        for(var k in boxes) {
+            scene.remove(boxes[k].mesh);
+            boxes[k].mesh = createMesh(boxes[k]);
+            scene.add(boxes[k].mesh);
+        }
+    }
+
+    function isFront(box) {
+       return box.position.z > 0;
+    }
+    function isLeft(box) {
+        return box.position.x < 0;
+    }
+
     function selectLeft() {
         group.children = [];
         for(var k in boxes) {
-            if (boxes[k].mesh.position.x < 0) {
+            if (isLeft(boxes[k])) {
                 group.add(boxes[k].mesh);
+                var position = boxes[k].position;
+
+
+                //top front
+                if (position.z > 0 && position.y > 0) {
+                    boxes[k].color.front = boxes[k].color.top;
+                    boxes[k].color.top = boxes[k].color.back;
+
+                }
+
+                //top center
+                if (position.z == 0 && position.y > 0) {
+                    boxes[k].color.top = boxes[k].color.back;
+                }
+
+                //back center
+                if (position.z < 0 && position.y == 0) {
+                    boxes[k].color.back = boxes[k].color.bottom;
+                }
+
+                //back bottom
+                if (position.z < 0 && position.y < 0) {
+                    boxes[k].color.top = boxes[k].color.back;
+                    boxes[k].color.back = boxes[k].color.bottom;
+                }
+
+                if (position.z < 0 && position.y > 0) {
+                    boxes[k].color.top = boxes[k].color.back;
+                    boxes[k].color.back = boxes[k].color.bottom;
+                }
+
+                //bottom back
+                if (position.z < 0 && position.y < 0) {
+                    boxes[k].color.back = boxes[k].color.bottom;
+                    boxes[k].color.bottom = boxes[k].color.front;
+                }
+
+                //bottom center
+                if (position.z == 0 && position.y < 0) {
+                    boxes[k].color.bottom = boxes[k].color.front;
+                }
+
+                //bottom front
+                if (position.z > 0 && position.y < 0) {
+                    boxes[k].color.bottom = boxes[k].color.front;
+                    boxes[k].color.front = boxes[k].color.top;
+                }
+
+                //front center
+                if (position.z > 0 && position.y == 0) {
+                    boxes[k].color.front = boxes[k].color.top;
+                }
             }
         }
     }
@@ -104,22 +192,21 @@
 
 
     function selectRotation() {
+        var selectedRotation = 0;//Math.round(Math.random() * 100) % 2;
 
-        rotatedPosition = group.rotation[rotationAxis] + 1.57;
-
-        //var selectedRotation = Math.round(Math.random() * 100) % 1;
-        switch(1) {
+        switch(selectedRotation) {
             case 0:
                 selectLeft();
                 rotationAxis = 'x';
                 rotatedPosition = group.rotation[rotationAxis] + 1.57;
             break;
             case 1:
-                selectFront();
                 rotationAxis = 'z';
                 rotatedPosition = group.rotation[rotationAxis] + 1.57;
+                selectFront();
             break;
         }
+
     }
 
 
@@ -132,25 +219,42 @@
             if (group.rotation[rotationAxis] >= rotatedPosition) {
                 group.rotation[rotationAxis] = rotatedPosition;
                 doRotation = false;
+                resetMeshes(boxes);
             }
         } else {
-            selectRotation();
-            doRotation = true;
+
+           // selectRotation();
+           // doRotation = true;
         }
 
-        scene.rotation.y = mouseX/100;
-        scene.rotation.x = mouseY/100;
+        scene.rotation.y = prevRY + mouseX / 100;
+        scene.rotation.x = prevRX + mouseY / 100;
 
         renderer.render( scene, camera );
 
     }
 
-
+    var initX, initY;
+    var prevRX = 0, prevRY = 0;
+    var pressed = false;
     function onDocumentMouseMove( event ) {
-        mouseX = ( event.clientX - windowHalfX );
-        mouseY = ( event.clientY - windowHalfY );
+        if (pressed) {
+            mouseX = (event.clientX - initX);
+            mouseY = (event.clientY - initY);
+        }
     }
-
+    function onDocumentMouseUp( event ) {
+        pressed = false;
+    }
+    function onDocumentMouseDown( event ) {
+        initX = event.clientX;
+        initY = event.clientY;
+        prevRX = scene.rotation.x;
+        prevRY = scene.rotation.y;
+        mouseX = 0;
+        mouseY = 0;
+        pressed = true;
+    }
 </script>
 </body>
 </html>
