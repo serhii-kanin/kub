@@ -108,6 +108,19 @@ function Kube() {
         return corners;
     };
 
+    /**
+     * получить грани кубика но не углы
+     */
+    this.getEdges = function() {
+        var edges = [];
+        for(var k in this.boxes) {
+            if(this.boxes[k].isEdge()) {
+                edges.push(this.boxes[k]);
+            }
+        }
+        return edges;
+    };
+
     this.updateLeft = function() {
         var leftTopFrontHex = this.boxes['left_top_front'].color.getHexList();
 

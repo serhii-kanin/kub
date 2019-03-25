@@ -176,6 +176,11 @@ function Box(x, y, z)
         return this.position.x !=0 && this.position.z !=0 && this.position.y != 0;
     };
 
+    this.isEdge = function() {
+        return this.position.x!=0 && this.position.z == 0 && this.position.y !=0 ||
+            this.position.z !=0 && this.position.x == 0 && this.position.y != 0;
+    };
+
     this.isRotating = function() {
         return (
             Math.abs(this.position.x) +
@@ -217,6 +222,9 @@ function Box(x, y, z)
     this.hasColors = function(one, two, three) {
         var colorsToCheck = [one, two, three];
 
+        if (three == null) {
+            colorsToCheck.pop();
+        }
         var matchCount = 0;
         var hexColors = this.color.getHexList();
         for(var k in hexColors) {
@@ -224,8 +232,19 @@ function Box(x, y, z)
                 matchCount++;
             }
         }
-        return matchCount == 3;
+        return matchCount == colorsToCheck.length;
     };
+
+    this.hasColor = function(color) {
+        var hexColors = this.color.getHexList();
+        for(var k in hexColors) {
+            if (hexColors[k] == color) {
+                return true;
+            }
+        }
+        return false;
+    };
+
 
     this.mesh = this.createMesh();
 

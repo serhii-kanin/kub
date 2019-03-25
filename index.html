@@ -54,7 +54,7 @@
     var mouseX = 0, mouseY = 0;
 
     var scale = 0.11;
-    var rotationSpeed =1.57;
+    var rotationSpeed =0.2;
     init();
     animate();
 
@@ -420,7 +420,7 @@
                     ) {
                         rightBackTopCornerPlaced = true;
                     } else {
-                        placeTopCorner('right_back');
+                        placeTopCorner('back');
                         return;
                     }
                 }
@@ -435,7 +435,7 @@
                         console.log('x');
                         leftBackTopCornerPlaced = true;
                     } else {
-                        placeTopCorner('left_back');
+                        placeTopCorner('left');
                         return;
                     }
                 }
@@ -448,7 +448,7 @@
                     ) {
                         leftTopCornerPlaced = true;
                     } else {
-                        placeTopCorner('left');
+                        placeTopCorner('front');
                         return;
                     }
                 }
@@ -471,12 +471,12 @@
             } else if (phase == 2) {
                 console.log('phase 2');
 
-                placeCenterEdges('left')
+                placeCenterEdges();
             }
         };
 
         var sideMapping = {
-            'left': {
+            'front': {
                 'left': 'left',
                 'right': 'right',
                 'back': 'back',
@@ -488,13 +488,13 @@
                 'back': 'left',
                 'front': 'right'
             },
-            'left_back': {
+            'left': {
                 'left': 'back',
                 'right': 'front',
                 'back': 'right',
                 'front': 'left'
             },
-            'right_back': {
+            'back': {
                 'left': 'right',
                 'right': 'left',
                 'back': 'front',
@@ -502,7 +502,7 @@
             }
         };
         var moveMapping = {
-            'left': {
+            'front': {
                 'left': 'left',
                 'leftInverse': 'leftInverse',
                 'right': 'right',
@@ -511,7 +511,7 @@
                 'front': 'front',
                 'frontInverse': 'frontInverse'
             },
-            'left_back': {
+            'left': {
                 'left': 'back',
                 'leftInverse': 'backInverse',
                 'right': 'front',
@@ -529,7 +529,7 @@
                 'front': 'right',
                 'frontInverse': 'rightInverse'
             },
-            'right_back': {
+            'back': {
                 'left': 'rightInverse',
                 'leftInverse': 'right',
                 'right': 'leftInverse',
@@ -540,7 +540,7 @@
             }
         };
         var colorMapping = {
-            'left': {
+            'front': {
                 'front': 'center_center_front',
                 'left': 'left_center_center',
             },
@@ -548,18 +548,17 @@
                 'front': 'right_center_center',
                 'left': 'center_center_front'
             },
-            'left_back': {
+            'left': {
                 'front': 'left_center_center',
                 'left': 'center_center_back'
             },
-            'right_back': {
+            'back': {
                 'front': 'center_center_back',
                 'left': 'right_center_center'
             }
         };
 
-        var placeCenterEdges = function(side) {
-
+        var placeCentralLeftEdge = function(side) {
             var moveLeftInverse = moveMapping[side].leftInverse;
             var moveRightInverse = moveMapping[side].rightInverse;
             var moveLeft = moveMapping[side].left;
@@ -567,30 +566,196 @@
             var moveFrontInverse = moveMapping[side].frontInverse;
             var moveFront = moveMapping[side].front;
 
-            var sideLeft = sideMapping[side].left;
-            var sideRight = sideMapping[side].right;
-            var sideBack = sideMapping[side].back;
-            var sideFront = sideMapping[side].front;
 
-            var colorTop = kube.boxes['center_top_center'].color.top.getHex();
-            var colorFront = kube.boxes[colorMapping[side].front].color[sideFront].getHex();
-            var colorLeft = kube.boxes[colorMapping[side].left].color[sideLeft].getHex();
-            var colorLeft = kube.boxes[colorMapping[side].left].color[sideLeft].getHex();
-            var colorBottom = kube.boxes['center_bottom_center'].color['bottom'].getHex();
+            var serial = {};
 
-            var box;
-            for(var k in kube.boxes) {
-                box = kube.boxes[k];
-                console.log('-');
-                if (box.isBottomCentralRotatingWithBottomColor(colorBottom)) {
-                    console.log('+');
-                    box.color.back.setHex(0x000000);
-                    box.color.front.setHex(0x000000);
-                    box.color.left.setHex(0x000000);
-                    box.color.right.setHex(0x000000);
-                    box.color.top.setHex(0x000000);
-                    box.color.bottom.setHex(0x000000);
-                    box.mesh.geometry.colorsNeedUpdate = true;
+            serial['bottom'] = 1;
+
+
+            serial[moveLeft] = 1;
+            serial['bottomInverse'] = 1;
+            serial[moveLeftInverse] = 1;
+
+            scheduledRotations = addRotations(scheduledRotations, [serial]);
+
+            serial = {};
+            serial['bottomInverse'] = 1;
+
+            serial['stop'] = 0;
+            //serial[moveFront] = 1;
+
+            scheduledRotations = addRotations(scheduledRotations, [serial]);
+            serial = {};
+            serial[moveFront] = 1;
+            serial['bottom'] = 1;
+            serial[moveFrontInverse] = 1;
+            serial['stop'] = 0;
+
+            scheduledRotations = addRotations(scheduledRotations, [serial]);
+
+        };
+        var placeCentralRightEdge = function(side) {
+            var moveLeftInverse = moveMapping[side].leftInverse;
+            var moveRightInverse = moveMapping[side].rightInverse;
+            var moveLeft = moveMapping[side].left;
+            var moveRight = moveMapping[side].right;
+            var moveFrontInverse = moveMapping[side].frontInverse;
+            var moveFront = moveMapping[side].front;
+
+            var serial = {};
+
+            serial['bottomInverse'] = 1;
+
+
+            serial[moveRight] = 1;
+            serial['bottom'] = 1;
+            serial[moveRightInverse] = 1;
+
+            scheduledRotations = addRotations(scheduledRotations, [serial]);
+
+            serial = {};
+            serial['bottom'] = 1;
+
+            serial['stop'] = 0;
+            //serial[moveFront] = 1;
+
+            scheduledRotations = addRotations(scheduledRotations, [serial]);
+            serial = {};
+            serial[moveFrontInverse] = 1;
+            serial['bottomInverse'] = 1;
+            serial[moveFront] = 1;
+            serial['stop'] = 0;
+
+            scheduledRotations = addRotations(scheduledRotations, [serial]);
+        };
+
+        var placeCenterEdges = function() {
+
+
+            var edge;
+            var edges = kube.getEdges();
+
+            var colorFront = kube.boxes['center_center_front'].color.front.getHex();
+            var colorBack = kube.boxes['center_center_back'].color.back.getHex();
+            var colorLeft = kube.boxes['left_center_center'].color.left.getHex();
+            var colorRight = kube.boxes['right_center_center'].color.right.getHex();
+            var colorBottom = kube.boxes['center_bottom_center'].color.bottom.getHex();
+
+
+            var destination;
+            var frontColor;
+            var serials = [];
+            var serial;
+
+            var round = [colorFront, colorRight, colorBack, colorLeft];
+            var frontSides = ['front', 'right', 'back', 'left'];
+            var roundPosition;
+            var roundLeft;
+            var roundRight;
+            for(var k in edges) {
+                edge = edges[k];
+                //если есть боковушка внизу
+                if (edge.isBottom() && !edge.hasColor(colorBottom)) {
+                    serials = [];
+                    serial = {};
+
+                    if (edge.isRight()) {
+                        destination = 3;
+                        frontColor = edge.color.right.getHex();
+                    } else if (edge.isBack()) {
+                        destination = 2;
+                        frontColor = edge.color.back.getHex();
+                    } else if (edge.isLeft()) {
+                        destination = 1;
+                        frontColor = edge.color.left.getHex();
+                    } else if (edge.isFront()) {
+                        destination = 0;
+                        frontColor = edge.color.front.getHex();
+                    }
+
+                    roundPosition = 0;
+                    console.log('#'+frontColor.toString(16));
+                    if (frontColor == colorBack) {
+                        destination+=2;
+                        roundPosition = 2;
+                    } else if(frontColor == colorRight) {
+                        destination+=1;
+                        roundPosition = 1;
+                    } else if(frontColor == colorLeft) {
+                        destination+=3;
+                        roundPosition = 3;
+                    }
+
+
+                    if (destination >= 4) {
+                        destination-=4;
+                    }
+                    if (destination) {
+                        serial['bottom'] = destination;
+                    }
+
+
+                    roundRight = roundPosition + 1;
+                    if (roundRight  ==  4) {
+                        roundRight = 0;
+                    }
+                    roundLeft = roundPosition - 1;
+                    if (roundLeft == -1) {
+                        roundLeft = 3;
+                    }
+                    console.log('roundPosition = ' + roundPosition +
+                        ' roundRight = ' + roundRight +
+                        ' roundLeft = ' + roundLeft +
+                    ' frontSide = ' + frontSides[roundPosition]);
+
+
+                    serial['stop'] = 0;
+                    serials.push(serial);
+                    scheduledRotations = addRotations(scheduledRotations, serials);
+                    if (round[roundRight] == edge.color.bottom.getHex()) {
+                        console.log('to right');
+                        placeCentralRightEdge(frontSides[roundPosition]);
+                    } else if(round[roundLeft] == edge.color.bottom.getHex()) {
+                        console.log('to left');
+                        placeCentralLeftEdge(frontSides[roundPosition]);
+                    }
+
+                }
+                if (scheduledRotations.length) {
+                    break;
+                }
+            }
+
+            if (!scheduledRotations.length) {
+                console.log('checking central edges');
+                var boxes = kube.boxes;
+                var box;
+                console.log('checking phase 2');
+                for(var k in boxes) {
+                    box = boxes[k];
+                    if (box.position.y == 0) {
+                        if (box.isFront() && box.isLeft() && box.color.front.getHex() != colorFront) {
+                            console.log('front left not matching');
+                            placeCentralLeftEdge('front');
+                        } else if (box.isFront() && box.isRight() && box.color.front.getHex() != colorFront) {
+                            console.log('front right not matching');
+                            placeCentralLeftEdge('right');
+                        } else if (box.isBack() && box.isLeft() && box.color.back.getHex() != colorBack) {
+                            console.log('back left not matching');
+                            placeCentralLeftEdge('left');
+                        } else if (box.isRight() && box.isBack() && box.color.back.getHex() != colorBack) {
+                            placeCentralLeftEdge('back');
+                            console.log('back right not matching');
+                        }
+                    }
+
+                    if (scheduledRotations.length) {
+                        break;
+                    }
+                }
+
+                if (!scheduledRotations.length) {
+                    phase = 3;
                 }
             }
         };
