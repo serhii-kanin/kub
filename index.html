@@ -1,22 +1,678 @@
 <html>
 <head>
     <script src="//cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
+    <style>
+        body {
+            margin: 0px;
+            background-color: #000000;
+            color: #fff;
+            font-family:Monospace;
+            text-align: center;
+            font-size: 15px;
+            line-height: 30px;
+            overflow: hidden;
+        }
+
+        #info {
+            position: absolute;
+            top: 0px; width: 100%;
+            padding: 15px;
+            z-index:100;
+            box-sizing: border-box;
+        }
+
+        a {
+            color: white;
+        }
+    </style>
 </head>
 <body>
+<div id="info">
+    <a href="javascript:control.setMode( 'randomize' );">Randomize</a> |
+    <a href="javascript:control.setMode( 'assemble' );">Assemble</a> |
+    <a href="javascript:control.stop();">Stop</a><br>
+    <a href="javascript:control.rotateTop();">Rotate Top</a> |
+    <a href="javascript:control.rotateITop();">Rotate ITop</a> |
+    <a href="javascript:control.rotateLeft();">Rotate Left</a> |
+    <a href="javascript:control.rotateILeft();">Rotate ILeft</a> |
+    <a href="javascript:control.rotateRight();">Rotate Right</a> |
+    <a href="javascript:control.rotateIRight();">Rotate IRight</a> |
+    <a href="javascript:control.rotateBack();">Rotate Back</a> |
+    <a href="javascript:control.rotateIBack();">Rotate IBack</a> |
+    <a href="javascript:control.rotateFront();">Rotate Front</a> |
+    <a href="javascript:control.rotateIFront();">Rotate IFront</a>
+</div>
 <script>
     var camera, scene, renderer;
-    var geometry, material, boxes, group, rotationGroup;
+    var boxes;
     var mouseX = 0, mouseY = 0;
 
-    var windowHalfX = window.innerWidth / 2;
-    var windowHalfY = window.innerHeight / 2;
-
-    var scale = 0.1;
+    var scale = 0.11;
+    var rotationSpeed = 0.1;
     init();
     animate();
-    var rotatedPosition;
-    var doRotation = true;
-    var rotationAxis;
+
+    var rotation;
+    var kube;
+    var rotationSelector;
+    var rotationStopped = false;
+
+    var control = {
+        mode: 'randomize',
+        setMode: function(mode) {
+            rotationStopped = false;
+            if (mode == 'randomize') {
+                rotationSelector = new RandomRotationSelector();
+            } else if (mode == 'assemble') {
+                rotationSelector = new AssemblingSelector();
+            }
+        },
+        stop: function() {
+            rotationStopped = true;
+        },
+        rotateTop: function() { //for debug
+            rotation = new Rotation('top', kube, 0.1);
+        },
+        rotateITop: function() { //for debug
+            rotation = new Rotation('topInverse', kube, 0.1);
+        },
+        rotateLeft: function() { //for debug
+            rotation = new Rotation('left', kube, 0.1);
+        },
+        rotateILeft: function() { //for debug
+            rotation = new Rotation('leftInverse', kube, 0.1);
+        },
+        rotateRight: function() { //for debug
+            rotation = new Rotation('right', kube, 0.1);
+        },
+        rotateIRight: function() { //for debug
+            rotation = new Rotation('rightInverse', kube, 0.1);
+        },
+        rotateBack: function() { //for debug
+            rotation = new Rotation('back', kube, 0.1);
+        },
+        rotateIBack: function() { //for debug
+            rotation = new Rotation('backInverse', kube, 0.1);
+        },
+        rotateFront: function() { //for debug
+            rotation = new Rotation('front', kube, 0.1);
+        },
+        rotateIFront: function() { //for debug
+            rotation = new Rotation('frontInverse', kube, 0.1);
+        }
+    };
+    function Kube() {
+        this.selectionGroup = new THREE.Group();
+        this.boxes = {};
+
+        var zDescriptions = ['back', 'center', 'front'];
+        var xDescription = ['left', 'center', 'right'];
+        var yDescription = ['bottom', 'center', 'top'];
+        for(var z = -1; z <= 1; z++) {
+            for(var x = -1; x <= 1; x++) {
+                for(var y = -1; y <= 1; y++) {
+                    var box = new Box(x, y, z);
+                    var key = xDescription[x+1] +'_' + yDescription[y+1] + '_' + zDescriptions[z+1];
+                    this.boxes[key] = box;
+                }
+            }
+        }
+
+
+        this.selectTop = function() {
+            for(var k in this.boxes) {
+                if (this.boxes[k].isTop()) {
+                    this.selectionGroup.add(this.boxes[k].mesh);
+                }
+            }
+        };
+        this.selectBottom = function() {
+            for(var k in this.boxes) {
+                if (this.boxes[k].isBottom()) {
+                    this.selectionGroup.add(this.boxes[k].mesh);
+                }
+            }
+        };
+
+        this.selectFront = function() {
+            for(var k in this.boxes) {
+                if (this.boxes[k].isFront()) {
+                    this.selectionGroup.add(this.boxes[k].mesh);
+                }
+            }
+        };
+
+        this.selectBack = function() {
+            for(var k in this.boxes) {
+                if (this.boxes[k].isBack()) {
+                    this.selectionGroup.add(this.boxes[k].mesh);
+                }
+            }
+        };
+
+        this.selectRight = function() {
+            for(var k in this.boxes) {
+                if (this.boxes[k].isRight()) {
+                    this.selectionGroup.add(this.boxes[k].mesh);
+                }
+            }
+        };
+
+        this.selectLeft = function() {
+            this.selectionGroup.children = [];
+            for(var k in this.boxes) {
+                if (this.boxes[k].isLeft()) {
+                    this.selectionGroup.add(this.boxes[k].mesh);
+                }
+            }
+        };
+
+        this.getLeftTopFrontCorner = function() {
+            for(var k in this.boxes) {
+                var box = this.boxes[k];
+                if (box.isTop() && box.isLeft() && box.isFront()) {
+                    return box;
+                }
+            }
+        };
+
+        this.getLeftTopBackCorner = function() {
+            for(var k in this.boxes) {
+                var box = this.boxes[k];
+                if (box.isTop() && box.isLeft() && box.isBack()) {
+                    return box;
+                }
+            }
+        };
+
+        this.getRightTopFrontCorner = function() {
+            for(var k in this.boxes) {
+                var box = this.boxes[k];
+                if (box.isTop() && box.isRight() && box.isFront()) {
+                    return box;
+                }
+            }
+        };
+        this.getRightTopBackCorner = function() {
+            for(var k in this.boxes) {
+                var box = this.boxes[k];
+                if (box.isTop() && box.isRight() && box.isBack()) {
+                    return box;
+                }
+            }
+        };
+        this.getCorners = function() {
+            var corners = [];
+            for(var k in this.boxes) {
+                if (this.boxes[k].isCorner()) {
+                    corners.push(this.boxes[k]);
+                }
+            }
+            return corners;
+        };
+
+        this.updateLeft = function() {
+            var leftTopFrontHex = this.boxes['left_top_front'].color.getHexList();
+
+            //corners
+            this.boxes['left_top_front'].rotateFront(this.boxes['left_top_back'].color.getHexList());
+            this.boxes['left_top_back'].rotateFront(this.boxes['left_bottom_back'].color.getHexList());
+            this.boxes['left_bottom_back'].rotateFront(this.boxes['left_bottom_front'].color.getHexList());
+            this.boxes['left_bottom_front'].rotateFront(leftTopFrontHex);
+
+
+            //centers
+            var leftTopCenterHex = this.boxes['left_top_center'].color.getHexList();
+            this.boxes['left_top_center'].rotateFront(this.boxes['left_center_back'].color.getHexList());
+            this.boxes['left_center_back'].rotateFront(this.boxes['left_bottom_center'].color.getHexList());
+            this.boxes['left_bottom_center'].rotateFront(this.boxes['left_center_front'].color.getHexList());
+            this.boxes['left_center_front'].rotateFront(leftTopCenterHex);
+        };
+
+        this.updateLeftInverse = function() {
+            var leftTopFrontHex = this.boxes['left_top_front'].color.getHexList();
+
+            //corners
+            this.boxes['left_top_front'].rotateFrontInverse(this.boxes['left_bottom_front'].color.getHexList());
+            this.boxes['left_bottom_front'].rotateFrontInverse(this.boxes['left_bottom_back'].color.getHexList());
+            this.boxes['left_bottom_back'].rotateFrontInverse(this.boxes['left_top_back'].color.getHexList());
+            this.boxes['left_top_back'].rotateFrontInverse(leftTopFrontHex);
+
+            //centers
+            var leftTopCenterHex = this.boxes['left_top_center'].color.getHexList();
+            this.boxes['left_top_center'].rotateFrontInverse(this.boxes['left_center_front'].color.getHexList());
+            this.boxes['left_center_front'].rotateFrontInverse(this.boxes['left_bottom_center'].color.getHexList());
+            this.boxes['left_bottom_center'].rotateFrontInverse(this.boxes['left_center_back'].color.getHexList());
+            this.boxes['left_center_back'].rotateFrontInverse(leftTopCenterHex);
+        };
+
+
+        this.updateRightInverse = function() {
+            var leftTopFrontHex = this.boxes['right_top_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_top_front'].rotateFrontInverse(this.boxes['right_bottom_front'].color.getHexList());
+            this.boxes['right_bottom_front'].rotateFrontInverse(this.boxes['right_bottom_back'].color.getHexList());
+            this.boxes['right_bottom_back'].rotateFrontInverse(this.boxes['right_top_back'].color.getHexList());
+            this.boxes['right_top_back'].rotateFrontInverse(leftTopFrontHex);
+
+            //centers
+            var leftTopCenterHex = this.boxes['right_top_center'].color.getHexList();
+            this.boxes['right_top_center'].rotateFrontInverse(this.boxes['right_center_front'].color.getHexList());
+            this.boxes['right_center_front'].rotateFrontInverse(this.boxes['right_bottom_center'].color.getHexList());
+            this.boxes['right_bottom_center'].rotateFrontInverse(this.boxes['right_center_back'].color.getHexList());
+            this.boxes['right_center_back'].rotateFrontInverse(leftTopCenterHex);
+        };
+
+        this.updateRight = function() {
+            var rightTopFrontHex = this.boxes['right_top_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_top_front'].rotateFront(this.boxes['right_top_back'].color.getHexList());
+            this.boxes['right_top_back'].rotateFront(this.boxes['right_bottom_back'].color.getHexList());
+            this.boxes['right_bottom_back'].rotateFront(this.boxes['right_bottom_front'].color.getHexList());
+            this.boxes['right_bottom_front'].rotateFront(rightTopFrontHex);
+
+
+            //centers
+            var rightTopCenterHex = this.boxes['right_top_center'].color.getHexList();
+            this.boxes['right_top_center'].rotateFront(this.boxes['right_center_back'].color.getHexList());
+            this.boxes['right_center_back'].rotateFront(this.boxes['right_bottom_center'].color.getHexList());
+            this.boxes['right_bottom_center'].rotateFront(this.boxes['right_center_front'].color.getHexList());
+            this.boxes['right_center_front'].rotateFront(rightTopCenterHex);
+
+        };
+
+        this.updateTop = function() {
+
+            var rightTopFrontHex = this.boxes['right_top_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_top_front'].rotateTop(this.boxes['left_top_front'].color.getHexList());
+            this.boxes['left_top_front'].rotateTop(this.boxes['left_top_back'].color.getHexList());
+            this.boxes['left_top_back'].rotateTop(this.boxes['right_top_back'].color.getHexList());
+            this.boxes['right_top_back'].rotateTop(rightTopFrontHex);
+
+            var centerTopFrontHex = this.boxes['center_top_front'].color.getHexList();
+
+            //centers
+            this.boxes['center_top_front'].rotateTop(this.boxes['left_top_center'].color.getHexList());
+            this.boxes['left_top_center'].rotateTop(this.boxes['center_top_back'].color.getHexList());
+            this.boxes['center_top_back'].rotateTop(this.boxes['right_top_center'].color.getHexList());
+            this.boxes['right_top_center'].rotateTop(centerTopFrontHex);
+
+        };
+
+        this.updateTopInverse = function() {
+
+            var rightTopFrontHex = this.boxes['right_top_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_top_front'].rotateTopInverse(this.boxes['right_top_back'].color.getHexList());
+            this.boxes['right_top_back'].rotateTopInverse(this.boxes['left_top_back'].color.getHexList());
+            this.boxes['left_top_back'].rotateTopInverse(this.boxes['left_top_front'].color.getHexList());
+            this.boxes['left_top_front'].rotateTopInverse(rightTopFrontHex);
+
+            var centerTopFrontHex = this.boxes['center_top_front'].color.getHexList();
+
+            //centers
+            this.boxes['center_top_front'].rotateTopInverse(this.boxes['right_top_center'].color.getHexList());
+            this.boxes['right_top_center'].rotateTopInverse(this.boxes['center_top_back'].color.getHexList());
+            this.boxes['center_top_back'].rotateTopInverse(this.boxes['left_top_center'].color.getHexList());
+            this.boxes['left_top_center'].rotateTopInverse(centerTopFrontHex);
+
+        };
+
+        this.updateBottom = function() {
+
+            var rightBottomFrontHex = this.boxes['right_bottom_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_bottom_front'].rotateTop(this.boxes['left_bottom_front'].color.getHexList());
+            this.boxes['left_bottom_front'].rotateTop(this.boxes['left_bottom_back'].color.getHexList());
+            this.boxes['left_bottom_back'].rotateTop(this.boxes['right_bottom_back'].color.getHexList());
+            this.boxes['right_bottom_back'].rotateTop(rightBottomFrontHex);
+
+            var centerBottomFrontHex = this.boxes['center_bottom_front'].color.getHexList();
+
+            //centers
+            this.boxes['center_bottom_front'].rotateTop(this.boxes['left_bottom_center'].color.getHexList());
+            this.boxes['left_bottom_center'].rotateTop(this.boxes['center_bottom_back'].color.getHexList());
+            this.boxes['center_bottom_back'].rotateTop(this.boxes['right_bottom_center'].color.getHexList());
+            this.boxes['right_bottom_center'].rotateTop(centerBottomFrontHex);
+
+        };
+
+        this.updateBottomInverse = function() {
+
+            var rightBottomFrontHex = this.boxes['right_bottom_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_bottom_front'].rotateTopInverse(this.boxes['right_bottom_back'].color.getHexList());
+            this.boxes['right_bottom_back'].rotateTopInverse(this.boxes['left_bottom_back'].color.getHexList());
+            this.boxes['left_bottom_back'].rotateTopInverse(this.boxes['left_bottom_front'].color.getHexList());
+            this.boxes['left_bottom_front'].rotateTopInverse(rightBottomFrontHex);
+
+            var centerBottomFrontHex = this.boxes['center_bottom_front'].color.getHexList();
+
+            //centers
+            this.boxes['center_bottom_front'].rotateTopInverse(this.boxes['right_bottom_center'].color.getHexList());
+            this.boxes['right_bottom_center'].rotateTopInverse(this.boxes['center_bottom_back'].color.getHexList());
+            this.boxes['center_bottom_back'].rotateTopInverse(this.boxes['left_bottom_center'].color.getHexList());
+            this.boxes['left_bottom_center'].rotateTopInverse(centerBottomFrontHex);
+
+        };
+
+        this.updateFront = function() {
+
+            var rightTopFrontHex = this.boxes['right_top_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_top_front'].rotateLeft(this.boxes['right_bottom_front'].color.getHexList());
+            this.boxes['right_bottom_front'].rotateLeft(this.boxes['left_bottom_front'].color.getHexList());
+            this.boxes['left_bottom_front'].rotateLeft(this.boxes['left_top_front'].color.getHexList());
+            this.boxes['left_top_front'].rotateLeft(rightTopFrontHex);
+
+            var rightCenterFrontHex = this.boxes['right_center_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_center_front'].rotateLeft(this.boxes['center_bottom_front'].color.getHexList());
+            this.boxes['center_bottom_front'].rotateLeft(this.boxes['left_center_front'].color.getHexList());
+            this.boxes['left_center_front'].rotateLeft(this.boxes['center_top_front'].color.getHexList());
+            this.boxes['center_top_front'].rotateLeft(rightCenterFrontHex);
+
+        };
+
+        this.updateBack = function() {
+
+            var rightTopBackHex = this.boxes['right_top_back'].color.getHexList();
+
+            //corners
+            this.boxes['right_top_back'].rotateLeft(this.boxes['right_bottom_back'].color.getHexList());
+            this.boxes['right_bottom_back'].rotateLeft(this.boxes['left_bottom_back'].color.getHexList());
+            this.boxes['left_bottom_back'].rotateLeft(this.boxes['left_top_back'].color.getHexList());
+            this.boxes['left_top_back'].rotateLeft(rightTopBackHex);
+
+            var rightCenterBackHex = this.boxes['right_center_back'].color.getHexList();
+
+            //corners
+            this.boxes['right_center_back'].rotateLeft(this.boxes['center_bottom_back'].color.getHexList());
+            this.boxes['center_bottom_back'].rotateLeft(this.boxes['left_center_back'].color.getHexList());
+            this.boxes['left_center_back'].rotateLeft(this.boxes['center_top_back'].color.getHexList());
+            this.boxes['center_top_back'].rotateLeft(rightCenterBackHex);
+
+        };
+
+        this.updateBackInverse = function() {
+            var rightTopHex = this.boxes['right_top_back'].color.getHexList();
+
+            //corners
+            this.boxes['right_top_back'].rotateLeftInverse(this.boxes['left_top_back'].color.getHexList());
+            this.boxes['left_top_back'].rotateLeftInverse(this.boxes['left_bottom_back'].color.getHexList());
+            this.boxes['left_bottom_back'].rotateLeftInverse(this.boxes['right_bottom_back'].color.getHexList());
+            this.boxes['right_bottom_back'].rotateLeftInverse(rightTopHex);
+
+            var rightCenterHex = this.boxes['right_center_back'].color.getHexList();
+
+            //corners
+            this.boxes['right_center_back'].rotateLeftInverse(this.boxes['center_top_back'].color.getHexList());
+            this.boxes['center_top_back'].rotateLeftInverse(this.boxes['left_center_back'].color.getHexList());
+            this.boxes['left_center_back'].rotateLeftInverse(this.boxes['center_bottom_back'].color.getHexList());
+            this.boxes['center_bottom_back'].rotateLeftInverse(rightCenterHex);
+        };
+
+        this.updateFrontInverse = function() {
+
+            var rightTopFrontHex = this.boxes['right_top_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_top_front'].rotateLeftInverse(this.boxes['left_top_front'].color.getHexList());
+            this.boxes['left_top_front'].rotateLeftInverse(this.boxes['left_bottom_front'].color.getHexList());
+            this.boxes['left_bottom_front'].rotateLeftInverse(this.boxes['right_bottom_front'].color.getHexList());
+            this.boxes['right_bottom_front'].rotateLeftInverse(rightTopFrontHex);
+
+            var rightCenterFrontHex = this.boxes['right_center_front'].color.getHexList();
+
+            //corners
+            this.boxes['right_center_front'].rotateLeftInverse(this.boxes['center_top_front'].color.getHexList());
+            this.boxes['center_top_front'].rotateLeftInverse(this.boxes['left_center_front'].color.getHexList());
+            this.boxes['left_center_front'].rotateLeftInverse(this.boxes['center_bottom_front'].color.getHexList());
+            this.boxes['center_bottom_front'].rotateLeftInverse(rightCenterFrontHex);
+
+        };
+
+        return this;
+    }
+
+    function Box(x, y, z)
+    {
+        this.position = {
+            x: x,
+            y: y,
+            z: z
+        };
+
+        this.openSides = {
+            left: x == -1,
+            right: x == 1,
+            back: z == -1,
+            front: z == 1,
+            bottom: y == -1,
+            top: y == 1,
+        };
+
+        this.rotateFront = function(hexList) {
+            this.color.back.setHex(hexList.bottom);
+            this.color.bottom.setHex(hexList.front);
+            this.color.front.setHex(hexList.top);
+            this.color.top.setHex(hexList.back);
+            this.color.left.setHex(hexList.left);
+            this.color.right.setHex(hexList.right);
+            this.mesh.geometry.colorsNeedUpdate = true;
+        };
+
+        this.rotateFrontInverse = function(hexList) {
+            this.color.back.setHex(hexList.top);
+            this.color.top.setHex(hexList.front);
+            this.color.front.setHex(hexList.bottom);
+            this.color.bottom.setHex(hexList.back);
+            this.color.left.setHex(hexList.left);
+            this.color.right.setHex(hexList.right);
+            this.mesh.geometry.colorsNeedUpdate = true;
+        };
+
+        this.rotateLeft = function(hexList) {
+            this.color.left.setHex(hexList.top);
+            this.color.top.setHex(hexList.right);
+            this.color.right.setHex(hexList.bottom);
+            this.color.bottom.setHex(hexList.left);
+            this.color.front.setHex(hexList.front);
+            this.color.back.setHex(hexList.back);
+
+            this.mesh.geometry.colorsNeedUpdate = true;
+        };
+
+        this.rotateLeftInverse = function(hexList) {
+            this.color.left.setHex(hexList.bottom);
+            this.color.bottom.setHex(hexList.right);
+            this.color.right.setHex(hexList.top);
+            this.color.top.setHex(hexList.left);
+            this.color.front.setHex(hexList.front);
+            this.color.back.setHex(hexList.back);
+            this.mesh.geometry.colorsNeedUpdate = true;
+        };
+
+        this.rotateTopInverse = function(hexList) {
+            this.color.left.setHex(hexList.front);
+            this.color.front.setHex(hexList.right);
+            this.color.right.setHex(hexList.back);
+            this.color.back.setHex(hexList.left);
+
+            this.color.top.setHex(hexList.top);
+            this.color.bottom.setHex(hexList.bottom);
+            this.mesh.geometry.colorsNeedUpdate = true;
+        };
+
+        this.rotateTop = function(hexList) {
+            this.color.left.setHex(hexList.back);
+            this.color.back.setHex(hexList.right);
+            this.color.top.setHex(hexList.top);
+            this.color.right.setHex(hexList.front);
+            this.color.bottom.setHex(hexList.bottom);
+            this.color.front.setHex(hexList.left);
+            this.mesh.geometry.colorsNeedUpdate = true;
+        };
+
+        var grayColor = new THREE.Color(0.7,0.7,0.7);
+        this.color = {
+            top: !this.openSides.top ? grayColor : new THREE.Color(0, 1, 0),
+            left: !this.openSides.left ? grayColor : new THREE.Color(1, 0, 0),
+            right: !this.openSides.right ? grayColor : new THREE.Color(1, 1, 1),
+            back: !this.openSides.back ? grayColor : new THREE.Color(1, 0.5, 0.2),
+            bottom: !this.openSides.bottom ? grayColor : new THREE.Color(0, 0, 1),
+            front: !this.openSides.front ? grayColor : new THREE.Color(1, 1, 0),
+            isSideColor: function(colorHex) {
+                var colors = this.getHexList();
+                for(var k in colors) {
+                    if (colors[k] == colorHex && k!='top' && k!='bottom') {
+                        return true;
+                    }
+                }
+                return false;
+            },
+            isBottomColor: function(colorHex) {
+                return colorHex == this.bottom.getHex();
+            },
+            isTopColor: function(colorHex) {
+                return colorHex == this.top.getHex();
+            },
+            getHexList: function() {
+                return {
+                    top: this.top.getHex(),
+                    left: this.left.getHex(),
+                    right: this.right.getHex(),
+                    back: this.back.getHex(),
+                    bottom: this.bottom.getHex(),
+                    front: this.front.getHex()
+                }
+            }
+        };
+
+        this.createMesh = function() {
+            var geometry = this.createGeometry();
+            var material = new THREE.MeshBasicMaterial({
+                color: 0xffffff,
+                vertexColors: THREE.FaceColors
+            });
+
+            var mesh = new THREE.Mesh( geometry, material);
+            mesh.position.x = this.position.x  * (scale + scale * 0.05);
+            mesh.position.y = this.position.y  * (scale + scale * 0.05);
+            mesh.position.z = this.position.z  * (scale + scale * 0.05);
+
+            return mesh;
+        };
+
+        this.createGeometry = function() {
+            var geometry = new THREE.BoxGeometry( scale, scale, scale );
+
+            geometry.faces[1].color = geometry.faces[0].color = this.color.right;
+            geometry.faces[2].color = geometry.faces[3].color = this.color.left;
+            geometry.faces[4].color = geometry.faces[5].color = this.color.top;
+            geometry.faces[6].color = geometry.faces[7].color = this.color.bottom;
+            geometry.faces[8].color = geometry.faces[9].color = this.color.front;
+            geometry.faces[10].color = geometry.faces[11].color = this.color.back;
+            return geometry;
+        };
+
+        this.isTop = function() {
+            return this.position.y == 1;
+        };
+        this.isBottom = function() {
+            return this.position.y == -1;
+        };
+        this.isFront = function() {
+            return this.position.z == 1;
+        };
+        this.isBack = function() {
+            return this.position.z == -1;
+        };
+        this.isLeft = function() {
+            return this.position.x == -1;
+        };
+
+        this.is = function(what) {
+            var f = 'is' + what.charAt(0).toUpperCase();
+            f += what.substr(1, what.length-1);
+            return this[f]();
+        }
+
+        this.isRight = function() {
+            return this.position.x == 1;
+        };
+        this.isCentral = function() {
+            return this.position.y == 0;
+        };
+
+        this.isCorner = function() {
+            return this.position.x !=0 && this.position.z !=0 && this.position.y != 0;
+        };
+
+        this.isRotating = function() {
+            return (
+                Math.abs(this.position.x) +
+                Math.abs(this.position.y) +
+                Math.abs(this.position.z)
+                ) != 1;
+        };
+
+        this.isCentralRotatingWithSideColor = function(colorHex) {
+            var pos = this.position;
+            var isCenter = (pos.x != 0 && pos.z != 0);
+            return isCenter && this.isCentral() && this.isRotating() && this.color.isSideColor(colorHex);
+        };
+        this.isBottomRotatingWithSideColor = function(colorHex) {
+            var pos = this.position;
+            var isCenter =  ((pos.z != 0 && pos.x == 0) ||
+                (pos.x != 0 && pos.z == 0));
+            return isCenter && this.isBottom() && this.isRotating() && this.color.isSideColor(colorHex);
+        };
+        this.isTopRotatingWithSideColor = function(colorHex) {
+            var pos = this.position;
+            var isCenter =  ((pos.z != 0 && pos.x == 0) ||
+                (pos.x != 0 && pos.z == 0));
+            return isCenter && this.isTop() && this.isRotating() && this.color.isSideColor(colorHex);
+        };
+        this.isBottomCentralRotatingWithBottomColor = function(colorHex) {
+            var pos = this.position;
+            var isCenter =  ((pos.z != 0 && pos.x == 0) ||
+                (pos.x != 0 && pos.z == 0));
+            return isCenter && this.isBottom() && this.isRotating() && this.color.isBottomColor(colorHex);
+        };
+        this.isTopCentralRotatingWithTopColor = function(colorHex) {
+            var pos = this.position;
+            var isCenter =  ((pos.z != 0 && pos.x == 0) ||
+                (pos.x != 0 && pos.z == 0));
+            return isCenter && this.isTop() && this.isRotating() && this.color.isTopColor(colorHex);
+        };
+
+        this.hasColors = function(one, two, three) {
+            var colorsToCheck = [one, two, three];
+
+            var matchCount = 0;
+            var hexColors = this.color.getHexList();
+            for(var k in hexColors) {
+                if (colorsToCheck.indexOf(hexColors[k]) != -1) {
+                    matchCount++;
+                }
+            }
+            return matchCount == 3;
+        };
+
+        this.mesh = this.createMesh();
+
+        return this;
+    }
 
 
     function init() {
@@ -28,204 +684,819 @@
 
         scene = new THREE.Scene();
 
-        group = new THREE.Group();
         boxes = [];
 
-        var red = new THREE.Color(1, 0, 0);
-        var green = new THREE.Color(0, 1, 0);
-        var blue = new THREE.Color(0, 0, 1);
-        var yellow = new THREE.Color(1, 1, 0);
-        var orange = new THREE.Color(1, 0.5, 0.2);
-        var white = new THREE.Color(1, 1, 1);
+        kube = new Kube();
+        rotationSelector = new RandomRotationSelector();
 
-        for(var z = -1; z <=1; z++) {
-            for(var x = -1; x <=1; x++) {
-                for(var y = -1; y <=1; y++) {
 
-                    var box = {
-                        color: {
-                            top: green,
-                            left: red,
-                            right: white,
-                            back: orange,
-                            bottom: blue,
-                            front: yellow
-
-                        },
-                        position: {
-                            x: x * (scale + scale * 0.05),
-                            y: y * (scale + scale * 0.05),
-                            z: z * (scale + scale * 0.05),
-                        }
-                    };
-
-                    box.mesh = createMesh(box);
-
-                    scene.add(box.mesh);
-                    boxes.push(box);
-                }
-            }
+        for(var k in kube.boxes) {
+            scene.add(kube.boxes[k].mesh);
         }
 
-        scene.add( group );
+        scene.add(kube.selectionGroup);
 
 
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setSize( window.innerWidth, window.innerHeight );
         document.body.appendChild( renderer.domElement );
-        selectRotation();
     }
 
-    function selectFront() {
-        for(var k in boxes) {
-            if (isFront(boxes[k])) {
-                group.add(boxes[k].mesh);
-            }
-        }
-    }
 
-    function createGeometry(colors) {
-        var geometry = new THREE.BoxGeometry( scale, scale, scale );
 
-        geometry.faces[1].color = geometry.faces[0].color = colors.right;
-        geometry.faces[2].color = geometry.faces[3].color = colors.left;
-        geometry.faces[4].color = geometry.faces[5].color = colors.top;
-        geometry.faces[6].color = geometry.faces[7].color = colors.bottom;
-        geometry.faces[8].color = geometry.faces[9].color = colors.front;
-        geometry.faces[10].color = geometry.faces[11].color = colors.back;
-        return geometry;
-    }
 
-    function createMesh(box){
-        var geometry = createGeometry(box.color);
-        var material = new THREE.MeshBasicMaterial({
-            color: 0xffffff,
-            vertexColors: THREE.FaceColors
-        });
-
-        var mesh = new THREE.Mesh( geometry, material);
-        mesh.position.x = box.position.x;
-        mesh.position.y = box.position.y;
-        mesh.position.z = box.position.z;
-
-        return mesh;
-    }
 
     function resetMeshes(boxes) {
-        group.children = [];
-        group.rotation.x = group.rotation.y = group.rotation.z = 0;
-        for(var k in boxes) {
-            scene.remove(boxes[k].mesh);
-            boxes[k].mesh = createMesh(boxes[k]);
-            scene.add(boxes[k].mesh);
+        kube.selectionGroup.children = [];
+        kube.selectionGroup.rotation.x
+            = kube.selectionGroup.rotation.y
+            = kube.selectionGroup.rotation.z = 0;
+        for(var k in kube.boxes) {
+            scene.add(kube.boxes[k].mesh);
         }
     }
 
-    function isFront(box) {
-       return box.position.z > 0;
+    function StopRotation() {
+        this.rotate = function() {
+            rotationStopped = true;
+        }
     }
-    function isLeft(box) {
-        return box.position.x < 0;
+    function Rotation(name, kube, step) {
+        this.name = name;
+        this.kube = kube;
+        this.settings = {
+            left: {
+                axis: 'x',
+                position: kube.selectionGroup.rotation['x'] + 1.57,
+                direction: 1,
+                kubeEdgeSelector: function() {kube.selectLeft()},
+                kubeEdgeUpdateSelector: function() {kube.updateLeft()}
+            },
+            leftInverse: {
+                axis: 'x',
+                position: kube.selectionGroup.rotation['x'] - 1.57,
+                direction: -1,
+                kubeEdgeSelector: function() {kube.selectLeft()},
+                kubeEdgeUpdateSelector: function() {kube.updateLeftInverse()}
+            },
+            right: {
+                axis: 'x',
+                position: kube.selectionGroup.rotation['x'] + 1.57,
+                direction: 1,
+                kubeEdgeSelector: function() {kube.selectRight()},
+                kubeEdgeUpdateSelector: function() {kube.updateRight()}
+            },
+            rightInverse: {
+                axis: 'x',
+                position: kube.selectionGroup.rotation['x'] - 1.57,
+                direction: -1,
+                kubeEdgeSelector: function() {kube.selectRight()},
+                kubeEdgeUpdateSelector: function() {kube.updateRightInverse()}
+            },
+            front: {
+                axis: 'z',
+                position: kube.selectionGroup.rotation['z'] + 1.57,
+                direction: 1,
+                kubeEdgeSelector: function() {kube.selectFront()},
+                kubeEdgeUpdateSelector: function() {kube.updateFront()}
+            },
+            back: {
+                axis: 'z',
+                position: kube.selectionGroup.rotation['z'] + 1.57,
+                direction: 1,
+                kubeEdgeSelector: function() {kube.selectBack()},
+                kubeEdgeUpdateSelector: function() {kube.updateBack()}
+            },
+            backInverse: {
+                axis: 'z',
+                position: kube.selectionGroup.rotation['z'] - 1.57,
+                direction: -1,
+                kubeEdgeSelector: function() {kube.selectBack()},
+                kubeEdgeUpdateSelector: function() {kube.updateBackInverse()}
+            },
+            frontInverse: {
+                axis: 'z',
+                position: kube.selectionGroup.rotation['z'] - 1.57,
+                direction: -1,
+                kubeEdgeSelector: function() {kube.selectFront()},
+                kubeEdgeUpdateSelector: function() {kube.updateFrontInverse()}
+            },
+            top: {
+                axis: 'y',
+                position: kube.selectionGroup.rotation['y'] + 1.57,
+                direction: 1,
+                kubeEdgeSelector: function() {kube.selectTop()},
+                kubeEdgeUpdateSelector: function() {kube.updateTop()}
+            },
+            topInverse: {
+                axis: 'y',
+                position: kube.selectionGroup.rotation['y'] - 1.57,
+                direction: -1,
+                kubeEdgeSelector: function() {kube.selectTop()},
+                kubeEdgeUpdateSelector: function() {kube.updateTopInverse()}
+            },
+            bottom: {
+                axis: 'y',
+                position: kube.selectionGroup.rotation['y'] + 1.57,
+                direction: 1,
+                kubeEdgeSelector: function() {kube.selectBottom()},
+                kubeEdgeUpdateSelector: function() {kube.updateBottom()}
+            },
+            bottomInverse: {
+                axis: 'y',
+                position: kube.selectionGroup.rotation['y'] - 1.57,
+                direction: -1,
+                kubeEdgeSelector: function() {kube.selectBottom()},
+                kubeEdgeUpdateSelector: function() {kube.updateBottomInverse()}
+            }
+        };
+
+        this.isInverseOf = function(anotherRotation) {
+
+            if (anotherRotation.name == this.name + 'Inverse' ||
+                (
+                    this.name != anotherRotation.name &&
+                    anotherRotation.name == this.name.replace('Inverse', '')
+                )
+            ) {
+                return true;
+            }
+            return false;
+        };
+        this.selectKubeSide = function() {
+            this.settings[this.name].kubeEdgeSelector();
+        };
+
+        this.updateKubeSide = function() {
+            this.settings[this.name].kubeEdgeUpdateSelector();
+        };
+
+        this.isFinished = false;
+
+        this.checkRotated = function() {
+            var settings = this.settings[this.name];
+
+            if (settings.direction == 1 &&
+                this.kube.selectionGroup.rotation[settings.axis] >= settings.position) {
+                return true;
+            }
+
+            if (settings.direction == -1 &&
+                this.kube.selectionGroup.rotation[settings.axis] <= settings.position) {
+                return true;
+            }
+            return false;
+        };
+
+        this.sideIsSelected = false;
+
+        this.rotate = function() {
+            if (!this.sideIsSelected) {
+                rotation.selectKubeSide();
+                this.sideIsSelected = true;
+            }
+            if (this.isFinished) {
+                return;
+            }
+            var settings = this.settings[this.name];
+            this.kube.selectionGroup.rotation[settings.axis] += settings.direction * step;
+            if (this.checkRotated()) {
+                this.kube.selectionGroup.rotation[settings.axis] = settings.position;
+                this.updateKubeSide();
+                resetMeshes(boxes);
+                this.isFinished = true;
+            }
+        };
+
+
+
+        return this;
     }
 
-    function selectLeft() {
-        group.children = [];
-        for(var k in boxes) {
-            if (isLeft(boxes[k])) {
-                group.add(boxes[k].mesh);
-                var position = boxes[k].position;
+
+    function RandomRotationSelector()
+    {
+
+        var step = rotationSpeed;
+        var createPossibleRotations = function() {
+            return [
+                new Rotation('left', kube, step),
+                new Rotation('leftInverse', kube, step),
+                new Rotation('right', kube, step),
+                new Rotation('rightInverse', kube, step),
+                new Rotation('top', kube, step),
+                new Rotation('topInverse', kube, step),
+                new Rotation('bottom', kube, step),
+                new Rotation('front', kube, step),
+                new Rotation('frontInverse', kube, step),
+                new Rotation('back', kube, step)
+            ];
+        };
+
+        var rotation;
+        var rotations;
+        var selectionSerialNumber = 0;
+
+        var selectRotation = function() {
+            var selectedRotation = Math.round(Math.random() * 100) % rotations.length;
+            if (rotation &&
+                (
+                    rotation.name == rotations[selectedRotation].name ||
+                    rotation.isInverseOf(rotations[selectedRotation])
+                )
+            ) {
+                selectionSerialNumber++;
+            } else {
+                selectionSerialNumber = 0;
+            }
+
+            if (selectionSerialNumber > 0) {
+                return selectRotation();
+            }
+            return selectedRotation;
+        };
+
+        this.getNextRotation = function() {
+            rotations = createPossibleRotations();
+            rotation = rotations[selectRotation()];
+            return rotation;
+        };
+
+        return this;
+    }
+
+    function AssemblingSelector() {
+        var step = rotationSpeed;
+        var colorTop = kube.boxes['center_top_center'].color.top.getHex();
+        var colorFront = kube.boxes['center_center_front'].color.front.getHex();
+        var colorLeft = kube.boxes['left_center_center'].color.left.getHex();
+        var colorRight = kube.boxes['right_center_center'].color.right.getHex();
+        var colorBack = kube.boxes['center_center_back'].color.back.getHex();
 
 
-                //top front
-                if (position.z > 0 && position.y > 0) {
-                    boxes[k].color.front = boxes[k].color.top;
-                    boxes[k].color.top = boxes[k].color.back;
-
-                }
-
-                //top center
-                if (position.z == 0 && position.y > 0) {
-                    boxes[k].color.top = boxes[k].color.back;
-                }
-
-                //back center
-                if (position.z < 0 && position.y == 0) {
-                    boxes[k].color.back = boxes[k].color.bottom;
-                }
-
-                //back bottom
-                if (position.z < 0 && position.y < 0) {
-                    boxes[k].color.top = boxes[k].color.back;
-                    boxes[k].color.back = boxes[k].color.bottom;
-                }
-
-                if (position.z < 0 && position.y > 0) {
-                    boxes[k].color.top = boxes[k].color.back;
-                    boxes[k].color.back = boxes[k].color.bottom;
-                }
-
-                //bottom back
-                if (position.z < 0 && position.y < 0) {
-                    boxes[k].color.back = boxes[k].color.bottom;
-                    boxes[k].color.bottom = boxes[k].color.front;
-                }
-
-                //bottom center
-                if (position.z == 0 && position.y < 0) {
-                    boxes[k].color.bottom = boxes[k].color.front;
-                }
-
-                //bottom front
-                if (position.z > 0 && position.y < 0) {
-                    boxes[k].color.bottom = boxes[k].color.front;
-                    boxes[k].color.front = boxes[k].color.top;
-                }
-
-                //front center
-                if (position.z > 0 && position.y == 0) {
-                    boxes[k].color.front = boxes[k].color.top;
+        var phase = 0;
+        var scheduledRotations = [];
+        var addRotations = function(storeTo, serials) {
+            for(var j in serials) {
+                var rotations = serials[j];
+                for (var rotationName in rotations) {
+                    for (var i = 0; i < rotations[rotationName]; i++) {
+                        if (rotationName == 'stop') {
+                            storeTo.push(new StopRotation())
+                        } else {
+                            storeTo.push(new Rotation(rotationName, kube, step))
+                        }
+                    }
                 }
             }
-        }
+            return storeTo;
+        };
+
+        //phase 1 vars
+        //phase 1 vars
+        var rightTopCornerPlaced = false;
+        var rightBackTopCornerPlaced = false;
+        var leftTopCornerPlaced = false;
+        var leftBackTopCornerPlaced = false;
+
+
+        var scheduleRotations = function() {
+            var rotationsSerial = [];
+
+            var side;
+            var serial = {};
+            var box;
+            //phase 0 vars
+            var hasBottomWithTopColor = false;
+
+
+            //top christ
+            if (phase == 0) {
+                //console.log('phase 0');
+                var boxes = kube.boxes;
+                for (var k in boxes) {
+                    box = boxes[k];
+                    //когда на дне куба цвет верха
+                    if (box.isBottomCentralRotatingWithBottomColor(colorTop)) {
+                        hasBottomWithTopColor = true;
+                        //console.log('bottom');
+                        if (box.color.front.getHex() == colorFront) {
+                            rotationsSerial = [];
+                            rotationsSerial.push({front:2});
+                            console.log('front rotation to top');
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.left.getHex() == colorLeft) {
+                            rotationsSerial = [];
+                            rotationsSerial.push({left:2});
+                            console.log('left rotation to top');
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.right.getHex() == colorRight) {
+                            rotationsSerial = [];
+                            rotationsSerial.push({right:2});
+                            console.log('right rotation to top');
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.back.getHex() == colorBack) {
+                            rotationsSerial = [];
+                            rotationsSerial.push({back:2});
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial);
+                            console.log('back rotation to top');
+                        }
+                    } else if (box.isCentralRotatingWithSideColor(colorTop)) {
+                        console.log('central');
+                        if (box.color.front.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            side = box.isLeft() ? 'left': 'right';
+                            console.log('front-' + side);
+                            serial = {};
+                            serial[side] = 1;
+
+                            serial['bottom'] = 1;
+                            rotationsSerial.push(serial);
+                            serial = {};
+                            serial[side] = 1;
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.left.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            side = box.isBack() ? 'back': 'front';
+                            console.log('left-' + side);
+                            serial = {};
+                            serial[side] = 1;
+                            serial['bottom'] = 1;
+
+                            rotationsSerial.push(serial);
+                            serial = {};
+                            serial[side] = 1;
+                            rotationsSerial.push(serial);
+
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.right.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            side = box.isBack() ? 'back': 'front';
+                            console.log('right-' + side);
+                            serial = {};
+                            serial[side] = 3;
+                            serial['bottom'] = 1;
+
+                            rotationsSerial.push(serial);
+                            serial = {};
+                            serial[side] = 1;
+                            rotationsSerial.push(serial);
+
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        }else if (box.color.back.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            side = box.isLeft() ? 'left': 'right';
+
+                            console.log('back-' + side);
+                            serial = {};
+                            serial[side] = 3;
+
+                            serial['bottom'] = 1;
+                            //serial['stop'] = 1;
+                            rotationsSerial.push(serial);
+                            serial = {};
+                            serial[side] = 1;
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        }
+                    } else if(box.isBottomRotatingWithSideColor(colorTop)) {
+
+                        console.log('bottom-side');
+                        if (box.color.front.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            serial = {'front': 1, 'stop': 0};
+                            console.log('bottom-side front');
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.left.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            serial = {'left': 1, 'stop': 0};
+                            console.log('bottom-side left');
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.right.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            serial = {'right': 1, 'stop': 0};
+                            console.log('bottom-side right');
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.back.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            serial = {'back': 1, 'stop': 0};
+                            console.log('bottom-side back');
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        }
+                    } else if(box.isTopRotatingWithSideColor(colorTop)) {
+                        console.log('top-side');
+                        if (box.color.front.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            serial = {'front': 1, 'stop': 0};
+                            console.log('top-side front');
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.left.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            serial = {'left': 1, 'stop': 0};
+                            console.log('front-side left');
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.right.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            serial = {'right': 1, 'stop': 0};
+                            console.log('front-side right');
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (box.color.back.getHex() == colorTop) {
+                            rotationsSerial = [];
+                            serial = {'back': 1, 'stop': 0};
+                            console.log('front-side back');
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        }
+                    }
+
+
+                    if (scheduledRotations.length) {
+                        console.log('break');
+                        break;
+                    }
+                }
+                if (scheduledRotations.length == 0 && hasBottomWithTopColor) {
+                    console.log('rotation bottom');
+                    rotationsSerial = [];
+                    rotationsSerial.push({bottom:1});
+
+                    scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                }
+
+                if (scheduledRotations.length == 0) {
+                    console.log('checking top');
+
+                    for(var kk in boxes) {
+                        box = boxes[kk];
+                        if (box.isTopCentralRotatingWithTopColor(colorTop)) {
+                            if (box.isLeft() && box.color.left.getHex() != colorLeft) {
+                                rotationsSerial = [];
+                                serial = {'left': 1, 'stop': 0};
+                                rotationsSerial.push(serial);
+                                scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                            }
+                            if (box.isRight() && box.color.right.getHex() != colorRight) {
+                                rotationsSerial = [];
+                                serial = {'right': 1, 'stop': 0};
+                                rotationsSerial.push(serial);
+                                scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                            }
+                            if (box.isFront() && box.color.front.getHex() != colorFront) {
+                                rotationsSerial = [];
+                                serial = {'front': 1, 'stop': 0};
+                                rotationsSerial.push(serial);
+                                scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                            }
+                            if (box.isBack() && box.color.back.getHex() != colorBack) {
+                                rotationsSerial = [];
+                                serial = {'back': 1, 'stop': 0};
+                                rotationsSerial.push(serial);
+                                scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                            }
+                        }
+                        if (scheduledRotations.length) {
+                            console.log('phase 1 completed');
+                            break;
+                        }
+                    }
+                    if (!scheduledRotations.length) {
+                        phase = 1;
+                    }
+                }
+            }
+            //top chist corners
+            else if (phase == 1) {
+                //step = 0.1;
+
+                if (!rightBackTopCornerPlaced) {
+                    //сначала проверим может он уже на месте
+                    box = kube.getRightTopBackCorner();
+                    if (box.color.right.getHex() == colorRight &&
+                        box.color.back.getHex() == colorBack &&
+                        box.color.top.getHex() == colorTop
+                    ) {
+                        rightBackTopCornerPlaced = true;
+                    } else {
+                        placeTopCorner('right_back');
+                        return;
+                    }
+                }
+                if (!leftBackTopCornerPlaced) {
+                    //step = 0.1;
+                    //сначала проверим может он уже на месте
+                    box = kube.getLeftTopBackCorner();
+                    if (box.color.left.getHex() == colorLeft &&
+                        box.color.back.getHex() == colorBack &&
+                        box.color.top.getHex() == colorTop
+                    ) {
+                        console.log('x');
+                        leftBackTopCornerPlaced = true;
+                    } else {
+                        placeTopCorner('left_back');
+                        return;
+                    }
+                }
+                if (!leftTopCornerPlaced) {
+                    //сначала проверим может он уже на месте
+                    box = kube.getLeftTopFrontCorner();
+                    if (box.color.left.getHex() == colorLeft &&
+                        box.color.front.getHex() == colorFront &&
+                        box.color.top.getHex() == colorTop
+                    ) {
+                        leftTopCornerPlaced = true;
+                    } else {
+                        placeTopCorner('left');
+                        return;
+                    }
+                }
+                if (!rightTopCornerPlaced) {
+                    //сначала проверим может он уже на месте
+                    box = kube.getRightTopFrontCorner();
+                    if (box.color.right.getHex() == colorRight &&
+                        box.color.front.getHex() == colorFront &&
+                        box.color.top.getHex() == colorTop
+                    ) {
+                        rightTopCornerPlaced = true;
+                    } else {
+                        placeTopCorner('right');
+                        return;
+                    }
+                }
+
+            }
+        };
+
+        var placeTopCorner = function(side) {
+            var sideMapping = {
+                'left': {
+                    'left': 'left',
+                    'right': 'right',
+                    'back': 'back',
+                    'front': 'front'
+                },
+                'right': {
+                    'left': 'front',
+                    'right': 'back',
+                    'back': 'left',
+                    'front': 'right'
+                },
+                'left_back': {
+                    'left': 'back',
+                    'right': 'front',
+                    'back': 'right',
+                    'front': 'left'
+                },
+                'right_back': {
+                    'left': 'right',
+                    'right': 'left',
+                    'back': 'front',
+                    'front': 'back'
+                }
+            };
+            var moveMapping = {
+                'left': {
+                    'left': 'left',
+                    'leftInverse': 'leftInverse',
+                    'right': 'right',
+                    'rightInverse': 'rightInverse',
+                    'back': 'back',
+                    'front': 'front',
+                    'frontInverse': 'frontInverse'
+                },
+                'left_back': {
+                    'left': 'back',
+                    'leftInverse': 'backInverse',
+                    'right': 'front',
+                    'rightInverse': 'frontInverse',
+                    'back': 'rightInverse',
+                    'front': 'leftInverse',
+                    'frontInverse': 'left'
+                },
+                'right': {
+                    'left': 'frontInverse',
+                    'leftInverse': 'front',
+                    'right': 'backInverse',
+                    'rightInverse': 'back',
+                    'back': 'left',
+                    'front': 'right',
+                    'frontInverse': 'rightInverse'
+                },
+                'right_back': {
+                    'left': 'rightInverse',
+                    'leftInverse': 'right',
+                    'right': 'leftInverse',
+                    'rightInverse': 'left',
+                    'back': 'frontInverse',
+                    'front': 'backInverse',
+                    'frontInverse': 'back'
+                }
+            };
+            var colorMapping = {
+                'left': {
+                    'front': 'center_center_front',
+                    'left': 'left_center_center'
+                },
+                'right': {
+                    'front': 'right_center_center',
+                    'left': 'center_center_front'
+                },
+                'left_back': {
+                    'front': 'left_center_center',
+                    'left': 'center_center_back'
+                },
+                'right_back': {
+                    'front': 'center_center_back',
+                    'left': 'right_center_center'
+                }
+            };
+
+            var moveLeftInverse = moveMapping[side].leftInverse;
+            var moveRightInverse = moveMapping[side].rightInverse;
+            var moveLeft = moveMapping[side].left;
+            var moveRight = moveMapping[side].right;
+            var moveFrontInverse = moveMapping[side].frontInverse;
+            var moveFront = moveMapping[side].front;
+
+            var sideLeft = sideMapping[side].left;
+            var sideRight = sideMapping[side].right;
+            var sideBack = sideMapping[side].back;
+            var sideFront = sideMapping[side].front;
+
+            var colorTop = kube.boxes['center_top_center'].color.top.getHex();
+            var colorFront = kube.boxes[colorMapping[side].front].color[sideFront].getHex();
+            var colorLeft = kube.boxes[colorMapping[side].left].color[sideLeft].getHex();
+
+            var rotationsSerial;
+            var corners = kube.getCorners();
+            var corner;
+            var serial;
+            for(var c in corners) {
+                corner = corners[c];
+                if (corner.hasColors(colorTop, colorFront, colorLeft)) {
+                    console.log('left top front corner position ' +
+                        'x = ' + corner.position.x + ', ' +
+                        'y = ' + corner.position.y + ', ' +
+                        'z = ' + corner.position.z
+                    );
+                    //если он вверху
+                    if (corner.isTop()) {
+                        if (corner.is(sideLeft) && corner.is(sideBack)) {
+                            console.log(1);
+                            rotationsSerial = [];
+                            serial = {};
+                            serial[moveLeftInverse] = 1; serial['bottom'] = 1; serial[moveLeft] = 1;
+                            serial['stop'] = 0;
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (corner.is(sideLeft) && corner.is(sideFront)) {
+                            console.log(2);
+                            rotationsSerial = [];
+                            serial = {};
+                            serial[moveLeft] = 1; serial['bottomInverse'] = 1; serial[moveLeftInverse] = 1;
+                            serial['stop'] = 0;
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if(corner.is(sideRight) && corner.is(sideBack)) {
+                            console.log(3);
+                            rotationsSerial = [];
+                            serial = {};
+                            serial[moveRightInverse] = 1; serial['bottom'] = 1; serial[moveRight] = 1;
+                            serial['stop'] = 0;
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if(corner.is(sideRight) && corner.is(sideFront)) {
+                            console.log(4);
+                            rotationsSerial = [];
+                            serial = {};
+                            serial[moveRight] = 1; serial['bottomInverse'] = 1; serial[moveRightInverse] = 1;
+                            serial['stop'] = 0;
+                            rotationsSerial.push(serial);
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        }
+                    } else if(corner.isBottom()) {
+                        if (corner.is(sideLeft) && corner.is(sideBack)) {
+                            console.log(5);
+                            rotationsSerial = [];
+                            rotationsSerial.push({bottom: 1, stop: 0});
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if(corner.is(sideRight) && corner.is(sideBack)) {
+                            console.log(6);
+                            rotationsSerial = [];
+                            rotationsSerial.push({bottom: 2, stop: 0});
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if(corner.is(sideRight) && corner.is(sideFront)) {
+                            console.log(7);
+                            rotationsSerial = [];
+                            rotationsSerial.push({bottomInverse: 1, stop: 0});
+                            scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                        } else if (corner.is(sideLeft) && corner.is(sideFront)) {
+                            //кубик снизу под нужным местом и повернут вниз нужной гранью
+                            //и фронт цвет равен цвету слева
+                            if (corner.color.bottom.getHex() == colorTop &&
+                                corner.color[sideFront].getHex() == colorLeft) {
+                                console.log(8);
+                                rotationsSerial = [];
+
+                                serial = {};
+                                serial[moveLeft] = 1; serial['bottomInverse'] = 1; serial[moveLeftInverse] = 1;
+
+                                rotationsSerial.push(serial);
+                                serial = {};
+                                serial['bottom'] = 1; serial[moveFront] = 1;
+                                rotationsSerial.push(serial);
+
+                                serial = {};
+                                serial['bottom'] = 1; serial[moveFrontInverse] = 1;
+                                serial['stop'] = 0;
+                                rotationsSerial.push(serial);
+                                scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                            } else if (corner.color[sideFront].getHex() == colorTop) {
+                                console.log(9);
+                                rotationsSerial = [];
+                                serial = {};
+                                serial['bottom'] = 1; serial[moveLeft] = 1;
+
+                                rotationsSerial.push(serial);
+
+                                serial = {};
+                                serial['bottomInverse'] = 1; serial[moveLeftInverse] = 1;
+                                serial['stop'] = 0;
+                                rotationsSerial.push(serial);
+
+                                scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                            } else if (corner.color[sideLeft].getHex() == colorTop) {
+                                console.log(10);
+                                rotationsSerial = [];
+                                serial = {};
+                                serial['bottomInverse'] = 1; serial[moveFront] = 1;
+                                rotationsSerial.push(serial);
+                                serial = {};
+                                serial['bottom'] = 1; serial[moveFrontInverse] = 1;
+                                serial['stop'] = 0;
+                                rotationsSerial.push(serial);
+
+                                scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
+                            }
+                        }
+                    }
+
+                }
+                if (scheduledRotations.length) {
+                    break;
+                }
+            }
+        };
+
+        /**
+         * box.color.back.setHex(0x000000);
+         box.color.front.setHex(0x000000);
+         box.color.left.setHex(0x000000);
+         box.color.right.setHex(0x000000);
+         box.color.top.setHex(0x000000);
+         box.color.bottom.setHex(0x000000);
+         box.mesh.geometry.colorsNeedUpdate = true;
+         */
+
+
+
+        this.getNextRotation = function() {
+            //console.log(scheduledRotations);
+            if (scheduledRotations.length) {
+
+                return scheduledRotations.shift();
+            } else {
+                scheduleRotations();
+            }
+            return null;
+        };
+
+        return this;
+
     }
 
 
+    /*
 
-    function selectRotation() {
-        var selectedRotation = 0;//Math.round(Math.random() * 100) % 2;
-
-        switch(selectedRotation) {
-            case 0:
-                selectLeft();
-                rotationAxis = 'x';
-                rotatedPosition = group.rotation[rotationAxis] + 1.57;
-            break;
-            case 1:
-                rotationAxis = 'z';
-                rotatedPosition = group.rotation[rotationAxis] + 1.57;
-                selectFront();
-            break;
-        }
-
-    }
-
+    */
 
     function animate() {
-
         requestAnimationFrame( animate );
 
-        if (doRotation) {
-            group.rotation[rotationAxis] +=0.1;
-            if (group.rotation[rotationAxis] >= rotatedPosition) {
-                group.rotation[rotationAxis] = rotatedPosition;
-                doRotation = false;
-                resetMeshes(boxes);
-            }
+        if (!rotationStopped && (!rotation || rotation.isFinished)) {
+            rotation = rotationSelector.getNextRotation();
         } else {
-
-           // selectRotation();
-           // doRotation = true;
+            rotation && rotation.rotate();
         }
+
+
 
         scene.rotation.y = prevRY + mouseX / 100;
         scene.rotation.x = prevRX + mouseY / 100;
