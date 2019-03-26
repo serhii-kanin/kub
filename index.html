@@ -270,7 +270,7 @@
                             side = box.isBack() ? 'back': 'front';
                             console.log('right-' + side);
                             serial = {};
-                            serial[side] = 3;
+                            serial[side + 'Inverse'] = 1;
                             serial['bottom'] = 1;
 
                             rotationsSerial.push(serial);
@@ -285,7 +285,7 @@
 
                             console.log('back-' + side);
                             serial = {};
-                            serial[side] = 3;
+                            serial[side + 'Inverse'] = 1;
 
                             serial['bottom'] = 1;
                             //serial['stop'] = 1;
