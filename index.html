@@ -2,8 +2,8 @@
 <head>
     <script src="//cdn.rawgit.com/mrdoob/three.js/master/build/three.min.js"></script>
 
-    <script src="./js/Box.js"></script>
-    <script src="./js/Kube.js"></script>
+    <script src="./js/Box.js?1"></script>
+    <script src="./js/Kube.js?1"></script>
     <script src="./js/Rotation.js"></script>
     <script src="./js/RandomRotatonSelector.js"></script>
     <style>
@@ -54,7 +54,7 @@
     var mouseX = 0, mouseY = 0;
 
     var scale = 0.11;
-    var rotationSpeed =0.2;
+    var rotationSpeed =1.57;
     init();
     animate();
 
@@ -63,6 +63,10 @@
     var rotationSelector;
     var rotationStopped = false;
 
+
+    function printLog(message) {
+        //console.log(message);
+    }
     var control = {
         mode: 'randomize',
         setMode: function(mode) {
@@ -167,6 +171,7 @@
         var colorLeft = kube.boxes['left_center_center'].color.left.getHex();
         var colorRight = kube.boxes['right_center_center'].color.right.getHex();
         var colorBack = kube.boxes['center_center_back'].color.back.getHex();
+        var colorBottom = kube.boxes['center_bottom_center'].color.bottom.getHex();
 
 
         var phase = 0;
@@ -207,41 +212,41 @@
 
             //top christ
             if (phase == 0) {
-                //console.log('phase 0');
+                //printLog('phase 0');
                 var boxes = kube.boxes;
                 for (var k in boxes) {
                     box = boxes[k];
                     //когда на дне куба цвет верха
                     if (box.isBottomCentralRotatingWithBottomColor(colorTop)) {
                         hasBottomWithTopColor = true;
-                        //console.log('bottom');
+                        //printLog('bottom');
                         if (box.color.front.getHex() == colorFront) {
                             rotationsSerial = [];
                             rotationsSerial.push({front:2});
-                            console.log('front rotation to top');
+                            printLog('front rotation to top');
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.left.getHex() == colorLeft) {
                             rotationsSerial = [];
                             rotationsSerial.push({left:2});
-                            console.log('left rotation to top');
+                            printLog('left rotation to top');
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.right.getHex() == colorRight) {
                             rotationsSerial = [];
                             rotationsSerial.push({right:2});
-                            console.log('right rotation to top');
+                            printLog('right rotation to top');
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.back.getHex() == colorBack) {
                             rotationsSerial = [];
                             rotationsSerial.push({back:2});
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial);
-                            console.log('back rotation to top');
+                            printLog('back rotation to top');
                         }
                     } else if (box.isCentralRotatingWithSideColor(colorTop)) {
-                        console.log('central');
+                        printLog('central');
                         if (box.color.front.getHex() == colorTop) {
                             rotationsSerial = [];
                             side = box.isLeft() ? 'left': 'right';
-                            console.log('front-' + side);
+                            printLog('front-' + side);
                             serial = {};
                             serial[side] = 1;
 
@@ -254,7 +259,7 @@
                         } else if (box.color.left.getHex() == colorTop) {
                             rotationsSerial = [];
                             side = box.isBack() ? 'back': 'front';
-                            console.log('left-' + side);
+                            printLog('left-' + side);
                             serial = {};
                             serial[side] = 1;
                             serial['bottom'] = 1;
@@ -268,7 +273,7 @@
                         } else if (box.color.right.getHex() == colorTop) {
                             rotationsSerial = [];
                             side = box.isBack() ? 'back': 'front';
-                            console.log('right-' + side);
+                            printLog('right-' + side);
                             serial = {};
                             serial[side + 'Inverse'] = 1;
                             serial['bottom'] = 1;
@@ -283,7 +288,7 @@
                             rotationsSerial = [];
                             side = box.isLeft() ? 'left': 'right';
 
-                            console.log('back-' + side);
+                            printLog('back-' + side);
                             serial = {};
                             serial[side + 'Inverse'] = 1;
 
@@ -297,56 +302,56 @@
                         }
                     } else if(box.isBottomRotatingWithSideColor(colorTop)) {
 
-                        console.log('bottom-side');
+                        printLog('bottom-side');
                         if (box.color.front.getHex() == colorTop) {
                             rotationsSerial = [];
                             serial = {'front': 1, 'stop': 0};
-                            console.log('bottom-side front');
+                            printLog('bottom-side front');
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.left.getHex() == colorTop) {
                             rotationsSerial = [];
                             serial = {'left': 1, 'stop': 0};
-                            console.log('bottom-side left');
+                            printLog('bottom-side left');
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.right.getHex() == colorTop) {
                             rotationsSerial = [];
                             serial = {'right': 1, 'stop': 0};
-                            console.log('bottom-side right');
+                            printLog('bottom-side right');
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.back.getHex() == colorTop) {
                             rotationsSerial = [];
                             serial = {'back': 1, 'stop': 0};
-                            console.log('bottom-side back');
+                            printLog('bottom-side back');
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         }
                     } else if(box.isTopRotatingWithSideColor(colorTop)) {
-                        console.log('top-side');
+                        printLog('top-side');
                         if (box.color.front.getHex() == colorTop) {
                             rotationsSerial = [];
                             serial = {'front': 1, 'stop': 0};
-                            console.log('top-side front');
+                            printLog('top-side front');
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.left.getHex() == colorTop) {
                             rotationsSerial = [];
                             serial = {'left': 1, 'stop': 0};
-                            console.log('front-side left');
+                            printLog('front-side left');
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.right.getHex() == colorTop) {
                             rotationsSerial = [];
                             serial = {'right': 1, 'stop': 0};
-                            console.log('front-side right');
+                            printLog('front-side right');
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (box.color.back.getHex() == colorTop) {
                             rotationsSerial = [];
                             serial = {'back': 1, 'stop': 0};
-                            console.log('front-side back');
+                            printLog('front-side back');
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         }
@@ -354,12 +359,12 @@
 
 
                     if (scheduledRotations.length) {
-                        console.log('break');
+                        printLog('break');
                         break;
                     }
                 }
                 if (scheduledRotations.length == 0 && hasBottomWithTopColor) {
-                    console.log('rotation bottom');
+                    printLog('rotation bottom');
                     rotationsSerial = [];
                     rotationsSerial.push({bottom:1});
 
@@ -367,7 +372,7 @@
                 }
 
                 if (scheduledRotations.length == 0) {
-                    console.log('checking top');
+                    printLog('checking top');
 
                     for(var kk in boxes) {
                         box = boxes[kk];
@@ -398,7 +403,7 @@
                             }
                         }
                         if (scheduledRotations.length) {
-                            console.log('phase 1 completed');
+                            printLog('phase 1 completed');
                             break;
                         }
                     }
@@ -432,7 +437,7 @@
                         box.color.back.getHex() == colorBack &&
                         box.color.top.getHex() == colorTop
                     ) {
-                        console.log('x');
+                        printLog('x');
                         leftBackTopCornerPlaced = true;
                     } else {
                         placeTopCorner('left');
@@ -469,9 +474,122 @@
                     phase = 2;
                 }
             } else if (phase == 2) {
-                console.log('phase 2');
+                printLog('phase 2');
 
                 placeCenterEdges();
+            } else if (phase == 3) {
+                //step = 0.2;
+                printLog('phase 3');
+                placeChristBottomIncorrect();
+            }
+            else if(phase == 4) {
+                //step = 0.1;
+                printLog('phase 4');
+                var bottomEdges = kube.getBottomEdges();
+                var roundColors = {'front':colorFront, 'right':colorRight, 'back': colorBack, 'left':colorLeft};
+                var nearBoxes = {
+                    'front': ['left', 'right', 'back'],
+                    'right': ['front', 'back', 'left'],
+                    'back': ['right', 'left', 'front'],
+                    'left': ['back', 'front', 'right']
+                };
+                var roundEdges = {'front': null, 'right': null, 'back': null, 'left': null};
+
+                for(var k in bottomEdges) {
+                    box = bottomEdges[k];
+                    roundEdges[box.getRoundPosition()] = box;
+                }
+
+                var leftBox;
+                var rightBox;
+                var oppositeBox;
+                var colorToTest, leftRelativeColor, rightRelativeColor, oppositeRelativeColor;
+                //проверяем если все грани заматчились то просто двигаем на низ вокруг
+                for(var roundPos in roundEdges) {
+                    box = roundEdges[roundPos];
+                    leftBox = roundEdges[nearBoxes[roundPos][0]];
+                    rightBox = roundEdges[nearBoxes[roundPos][1]];
+                    oppositeBox = roundEdges[nearBoxes[roundPos][2]];
+                    for (var i in roundColors) {
+                        colorToTest = roundColors[i];
+                        leftRelativeColor = roundColors[nearBoxes[i][0]];
+                        rightRelativeColor = roundColors[nearBoxes[i][1]];
+                        oppositeRelativeColor = roundColors[nearBoxes[i][2]];
+
+                        /*
+                        printLog(
+                            'box =' + roundPos + ';' +
+                            'left = ' + nearBoxes[roundPos][0] + ';' +
+                            'right = ' + nearBoxes[roundPos][1] + ';' +
+                            'opposite = ' + nearBoxes[roundPos][2] + ';' +
+                            'color =' + i + '; #' + colorToTest +
+                            'cleftColor = ' + nearBoxes[i][0] + '; #' + leftRelativeColor.toString(16) +
+                            ' rightColor = ' + nearBoxes[i][1] + '; #' + rightRelativeColor.toString(16) +
+                            ' oppositeColor = ' + nearBoxes[i][2] + ';' +
+                            'hasColor = ' + box.hasColor(colorToTest) + ';' +
+                            'rightHasColor = ' + rightBox.hasColor(rightRelativeColor)
+                        );
+                        */
+
+                        if (box.hasColor(colorToTest)
+                            && leftBox.hasColor(leftRelativeColor)
+                            && rightBox.hasColor(rightRelativeColor)) {
+                            printLog('all colors matched');
+
+                            //
+
+                            if (!box.hasColor(roundColors['front'])) {
+                                scheduledRotations = addRotations(scheduledRotations, [{'bottom': 1}]);
+
+                            } else {
+                                phase = 5;
+                            }
+                            return;
+                        }
+
+
+                        if (box.hasColor(colorToTest) &&
+                            (
+                                leftBox.hasColor(leftRelativeColor) ||
+                                rightBox.hasColor(rightRelativeColor)
+                            )) {
+                            printLog('two near boxes with appropriate colors found');
+                            if (!box.hasColor(roundColors[roundPos])) {
+
+                                scheduledRotations = addRotations(scheduledRotations, [{'bottom': 1}]);
+                            } else {
+                                //вращаем сторону противоположную тестируемому кубику
+                                if (leftBox.hasColor(leftRelativeColor)) {
+                                    var rotatingPosition = nearBoxes[leftBox.getRoundPosition()][2];
+                                } else if (rightBox.hasColor(rightRelativeColor)) {
+                                    var rotatingPosition = nearBoxes[box.getRoundPosition()][2];
+                                }
+                                printLog('rotating position ' + rotatingPosition);
+                                placeChristNearSidesCorrect(rotatingPosition);
+
+                            }
+
+
+                            return;
+                        }
+
+                        if (box.hasColor(colorToTest) && oppositeBox.hasColor(oppositeRelativeColor)) {
+                            printLog('two opposite boxes with appropriate colors found');
+                            if (!box.hasColor(roundColors[roundPos])) {
+
+                                scheduledRotations = addRotations(scheduledRotations, [{'bottom': 1}]);
+                            } else {
+                                printLog('rotating position ' + leftBox.getRoundPosition());
+                                placeChristOppositeSidesCorrect(leftBox.getRoundPosition());
+                            }
+
+                            return;
+                        }
+                    }
+                }
+            }
+            else if(phase == 5) {
+                printLog('phase = 5');
             }
         };
 
@@ -558,6 +676,154 @@
             }
         };
 
+        var placeChristNearSidesCorrect = function(side) {
+            var moveLeftInverse = moveMapping[side].leftInverse;
+            var moveRightInverse = moveMapping[side].rightInverse;
+            var moveLeft = moveMapping[side].left;
+            var moveRight = moveMapping[side].right;
+            var moveFrontInverse = moveMapping[side].frontInverse;
+            var moveFront = moveMapping[side].front;
+
+
+            var serials = [];
+
+            var serial = {};
+
+            serial[moveLeft] = 1;
+            serial['bottom'] = 1;
+            serial[moveLeftInverse] = 1;
+
+            serials.push(serial);
+
+            serial = {};
+
+            serial['bottom'] = 1;
+            serial[moveLeft] = 1;
+            serials.push(serial);
+
+            serial = {};
+
+            serial['bottom'] = 2;
+
+            serial[moveLeftInverse] = 1;
+            serials.push(serial);
+
+            serial = {};
+
+            serial['bottom'] = 1;
+
+            //serial['stop'] = 1;
+            serials.push(serial);
+
+
+            scheduledRotations = addRotations(scheduledRotations, serials);
+
+        };
+
+        var placeChristOppositeSidesCorrect = function(side) {
+            var moveLeftInverse = moveMapping[side].leftInverse;
+            var moveLeft = moveMapping[side].left;
+
+            var serials = [];
+
+            var serial = {};
+
+            serial[moveLeft] = 1;
+            serial['bottom'] = 1;
+            serial[moveLeftInverse] = 1;
+
+            serials.push(serial);
+            serial = {};
+
+            serial['bottom'] = 1;
+            serial[moveLeft] = 1;
+            serials.push(serial);
+            serial = {};
+            serial['bottom'] = 2;
+            serial[moveLeftInverse] = 1;
+            serials.push(serial);
+
+            scheduledRotations = addRotations(scheduledRotations, serials);
+        };
+
+
+
+        var placeChristBottomIncorrect = function() {
+            var bottomEdges = kube.getBottomEdges();
+            var placedBottomBoxes = [];
+            var box;
+            for(var k in bottomEdges) {
+                box = bottomEdges[k];
+                if (box.color.bottom.getHex() == colorBottom) {
+                    placedBottomBoxes.push(box);
+                }
+            }
+
+            printLog(placedBottomBoxes.length + ' boxes placed');
+            if (placedBottomBoxes.length == 0) {
+                bottomChristIncorrectRotation('front');
+            } else if(placedBottomBoxes.length == 2) {
+                if (placedBottomBoxes[0].position.x !=0 && placedBottomBoxes[1].position.x !=0 ||
+                    placedBottomBoxes[0].position.z !=0 && placedBottomBoxes[1].position.z !=0
+                ) {
+                    //полоска собрана
+                    if (placedBottomBoxes[0].position.x !=0) {
+                        printLog('side lane is placed');
+                        bottomChristIncorrectRotation('front');
+                    } else {
+                        printLog('front lane is placed');
+
+                        bottomChristIncorrectRotation('left');
+                    }
+                } else {
+                    printLog('sides are placed');
+                    //один в центре и один сбоку
+                    if (
+                        (placedBottomBoxes[0].isBack() || placedBottomBoxes[1].isBack()) &&
+                        (placedBottomBoxes[0].isRight() || placedBottomBoxes[1].isRight())
+                    ) {
+                        bottomChristIncorrectRotation('front');
+                    } else if (
+                        (placedBottomBoxes[0].isFront() || placedBottomBoxes[1].isFront()) &&
+                        (placedBottomBoxes[0].isRight() || placedBottomBoxes[1].isRight())
+                    ) {
+                        bottomChristIncorrectRotation('left');
+                    } else if (
+                        (placedBottomBoxes[0].isBack() || placedBottomBoxes[1].isBack()) &&
+                        (placedBottomBoxes[0].isLeft() || placedBottomBoxes[1].isLeft())
+                    ) {
+                        bottomChristIncorrectRotation('right');
+                    } else if (
+                        (placedBottomBoxes[0].isFront() || placedBottomBoxes[1].isFront()) &&
+                        (placedBottomBoxes[0].isLeft() || placedBottomBoxes[1].isLeft())
+                    ) {
+                        bottomChristIncorrectRotation('back');
+                    }
+                }
+            } else if(placedBottomBoxes.length == 4) {
+                printLog('all boxes placed');
+                phase = 4;
+            }
+
+        };
+
+        var bottomChristIncorrectRotation = function(side) {
+            var moveLeftInverse = moveMapping[side].leftInverse;
+            var moveLeft = moveMapping[side].left;
+            var moveFrontInverse = moveMapping[side].frontInverse;
+            var moveFront = moveMapping[side].front;
+
+            var serial = {};
+            serial[moveFrontInverse] = 1;
+            serial[moveLeft] = 1;
+            serial['bottom'] = 1;
+            serial[moveLeftInverse] = 1;
+            serial['bottomInverse'] = 1;
+            serial[moveFront] = 1;
+            //serial['stop'] = 1;
+            scheduledRotations = addRotations(scheduledRotations, [serial]);
+        };
+
         var placeCentralLeftEdge = function(side) {
             var moveLeftInverse = moveMapping[side].leftInverse;
             var moveRightInverse = moveMapping[side].rightInverse;
@@ -594,6 +860,7 @@
             scheduledRotations = addRotations(scheduledRotations, [serial]);
 
         };
+
         var placeCentralRightEdge = function(side) {
             var moveLeftInverse = moveMapping[side].leftInverse;
             var moveRightInverse = moveMapping[side].rightInverse;
@@ -674,7 +941,7 @@
                     }
 
                     roundPosition = 0;
-                    console.log('#'+frontColor.toString(16));
+                    printLog('#'+frontColor.toString(16));
                     if (frontColor == colorBack) {
                         destination+=2;
                         roundPosition = 2;
@@ -703,7 +970,7 @@
                     if (roundLeft == -1) {
                         roundLeft = 3;
                     }
-                    console.log('roundPosition = ' + roundPosition +
+                    printLog('roundPosition = ' + roundPosition +
                         ' roundRight = ' + roundRight +
                         ' roundLeft = ' + roundLeft +
                     ' frontSide = ' + frontSides[roundPosition]);
@@ -713,10 +980,10 @@
                     serials.push(serial);
                     scheduledRotations = addRotations(scheduledRotations, serials);
                     if (round[roundRight] == edge.color.bottom.getHex()) {
-                        console.log('to right');
+                        printLog('to right');
                         placeCentralRightEdge(frontSides[roundPosition]);
                     } else if(round[roundLeft] == edge.color.bottom.getHex()) {
-                        console.log('to left');
+                        printLog('to left');
                         placeCentralLeftEdge(frontSides[roundPosition]);
                     }
 
@@ -727,25 +994,25 @@
             }
 
             if (!scheduledRotations.length) {
-                console.log('checking central edges');
+                printLog('checking central edges');
                 var boxes = kube.boxes;
                 var box;
-                console.log('checking phase 2');
+                printLog('checking phase 2');
                 for(var k in boxes) {
                     box = boxes[k];
                     if (box.position.y == 0) {
                         if (box.isFront() && box.isLeft() && box.color.front.getHex() != colorFront) {
-                            console.log('front left not matching');
+                            printLog('front left not matching');
                             placeCentralLeftEdge('front');
                         } else if (box.isFront() && box.isRight() && box.color.front.getHex() != colorFront) {
-                            console.log('front right not matching');
+                            printLog('front right not matching');
                             placeCentralLeftEdge('right');
                         } else if (box.isBack() && box.isLeft() && box.color.back.getHex() != colorBack) {
-                            console.log('back left not matching');
+                            printLog('back left not matching');
                             placeCentralLeftEdge('left');
                         } else if (box.isRight() && box.isBack() && box.color.back.getHex() != colorBack) {
                             placeCentralLeftEdge('back');
-                            console.log('back right not matching');
+                            printLog('back right not matching');
                         }
                     }
 
@@ -786,7 +1053,7 @@
             for(var c in corners) {
                 corner = corners[c];
                 if (corner.hasColors(colorTop, colorFront, colorLeft)) {
-                    console.log('left top front corner position ' +
+                    printLog('left top front corner position ' +
                         'x = ' + corner.position.x + ', ' +
                         'y = ' + corner.position.y + ', ' +
                         'z = ' + corner.position.z
@@ -794,7 +1061,7 @@
                     //если он вверху
                     if (corner.isTop()) {
                         if (corner.is(sideLeft) && corner.is(sideBack)) {
-                            console.log(1);
+                            printLog(1);
                             rotationsSerial = [];
                             serial = {};
                             serial[moveLeftInverse] = 1; serial['bottom'] = 1; serial[moveLeft] = 1;
@@ -802,7 +1069,7 @@
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if (corner.is(sideLeft) && corner.is(sideFront)) {
-                            console.log(2);
+                            printLog(2);
                             rotationsSerial = [];
                             serial = {};
                             serial[moveLeft] = 1; serial['bottomInverse'] = 1; serial[moveLeftInverse] = 1;
@@ -810,7 +1077,7 @@
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if(corner.is(sideRight) && corner.is(sideBack)) {
-                            console.log(3);
+                            printLog(3);
                             rotationsSerial = [];
                             serial = {};
                             serial[moveRightInverse] = 1; serial['bottom'] = 1; serial[moveRight] = 1;
@@ -818,7 +1085,7 @@
                             rotationsSerial.push(serial);
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if(corner.is(sideRight) && corner.is(sideFront)) {
-                            console.log(4);
+                            printLog(4);
                             rotationsSerial = [];
                             serial = {};
                             serial[moveRight] = 1; serial['bottomInverse'] = 1; serial[moveRightInverse] = 1;
@@ -828,17 +1095,17 @@
                         }
                     } else if(corner.isBottom()) {
                         if (corner.is(sideLeft) && corner.is(sideBack)) {
-                            console.log(5);
+                            printLog(5);
                             rotationsSerial = [];
                             rotationsSerial.push({bottom: 1, stop: 0});
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if(corner.is(sideRight) && corner.is(sideBack)) {
-                            console.log(6);
+                            printLog(6);
                             rotationsSerial = [];
                             rotationsSerial.push({bottom: 2, stop: 0});
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                         } else if(corner.is(sideRight) && corner.is(sideFront)) {
-                            console.log(7);
+                            printLog(7);
                             rotationsSerial = [];
                             rotationsSerial.push({bottomInverse: 1, stop: 0});
                             scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
@@ -847,7 +1114,7 @@
                             //и фронт цвет равен цвету слева
                             if (corner.color.bottom.getHex() == colorTop &&
                                 corner.color[sideFront].getHex() == colorLeft) {
-                                console.log(8);
+                                printLog(8);
                                 rotationsSerial = [];
 
                                 serial = {};
@@ -864,7 +1131,7 @@
                                 rotationsSerial.push(serial);
                                 scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                             } else if (corner.color[sideFront].getHex() == colorTop) {
-                                console.log(9);
+                                printLog(9);
                                 rotationsSerial = [];
                                 serial = {};
                                 serial['bottom'] = 1; serial[moveLeft] = 1;
@@ -878,7 +1145,7 @@
 
                                 scheduledRotations = addRotations(scheduledRotations, rotationsSerial)
                             } else if (corner.color[sideLeft].getHex() == colorTop) {
-                                console.log(10);
+                                printLog(10);
                                 rotationsSerial = [];
                                 serial = {};
                                 serial['bottomInverse'] = 1; serial[moveFront] = 1;
@@ -900,6 +1167,7 @@
             }
         };
 
+
         /**
          * box.color.back.setHex(0x000000);
          box.color.front.setHex(0x000000);
@@ -913,7 +1181,7 @@
 
 
         this.getNextRotation = function() {
-            //console.log(scheduledRotations);
+            //printLog(scheduledRotations);
             if (scheduledRotations.length) {
 
                 return scheduledRotations.shift();

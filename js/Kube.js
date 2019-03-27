@@ -65,8 +65,9 @@ function Kube() {
     };
 
     this.getLeftTopFrontCorner = function() {
-        for(var k in this.boxes) {
-            var box = this.boxes[k];
+        var corners = this.getCorners();
+        for(var k in corners) {
+            var box = corners[k];
             if (box.isTop() && box.isLeft() && box.isFront()) {
                 return box;
             }
@@ -74,8 +75,9 @@ function Kube() {
     };
 
     this.getLeftTopBackCorner = function() {
-        for(var k in this.boxes) {
-            var box = this.boxes[k];
+        var corners = this.getCorners();
+        for(var k in corners) {
+            var box = corners[k];
             if (box.isTop() && box.isLeft() && box.isBack()) {
                 return box;
             }
@@ -83,16 +85,18 @@ function Kube() {
     };
 
     this.getRightTopFrontCorner = function() {
-        for(var k in this.boxes) {
-            var box = this.boxes[k];
+        var corners = this.getCorners();
+        for(var k in corners) {
+            var box = corners[k];
             if (box.isTop() && box.isRight() && box.isFront()) {
                 return box;
             }
         }
     };
     this.getRightTopBackCorner = function() {
-        for(var k in this.boxes) {
-            var box = this.boxes[k];
+        var corners = this.getCorners();
+        for(var k in corners) {
+            var box = corners[k];
             if (box.isTop() && box.isRight() && box.isBack()) {
                 return box;
             }
@@ -119,6 +123,19 @@ function Kube() {
             }
         }
         return edges;
+    };
+
+    this.getBottomEdges = function() {
+        var bottomEdges = [];
+        var edges = this.getEdges();
+        var edge;
+        for(var k in edges) {
+            edge = edges[k];
+            if (edge.isBottom()) {
+                bottomEdges.push(edge);
+            }
+        }
+        return bottomEdges;
     };
 
     this.updateLeft = function() {

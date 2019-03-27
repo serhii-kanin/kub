@@ -155,6 +155,19 @@ function Box(x, y, z)
         return this.position.x == -1;
     };
 
+    this.getRoundPosition = function()
+    {
+        if (this.isLeft()) {
+            return 'left';
+        } else if(this.isRight()) {
+            return 'right';
+        } else if(this.isBack()) {
+            return 'back';
+        } else if(this.isFront()) {
+            return 'front';
+        }
+    };
+
     this.is = function(what) {
         //var allowedList = [
         //    'left', 'right', 'top', 'bottom'
