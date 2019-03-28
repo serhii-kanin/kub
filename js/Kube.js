@@ -93,6 +93,17 @@ function Kube() {
             }
         }
     };
+
+
+    this.getLeftBottomFrontCorner = function() {
+        var corners = this.getCorners();
+        for(var k in corners) {
+            var box = corners[k];
+            if (box.isBottom() && box.isLeft() && box.isFront()) {
+                return box;
+            }
+        }
+    };
     this.getRightTopBackCorner = function() {
         var corners = this.getCorners();
         for(var k in corners) {
@@ -112,6 +123,15 @@ function Kube() {
         return corners;
     };
 
+    this.getBottomCorners = function() {
+        var corners = [];
+        for(var k in this.boxes) {
+            if (this.boxes[k].isCorner() && this.boxes[k].isBottom()) {
+                corners.push(this.boxes[k]);
+            }
+        }
+        return corners;
+    };
     /**
      * получить грани кубика но не углы
      */

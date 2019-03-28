@@ -120,9 +120,9 @@ function Box(x, y, z)
         });
 
         var mesh = new THREE.Mesh( geometry, material);
-        mesh.position.x = this.position.x  * (scale + scale * 0.05);
-        mesh.position.y = this.position.y  * (scale + scale * 0.05);
-        mesh.position.z = this.position.z  * (scale + scale * 0.05);
+        mesh.position.x = this.position.x  * (scale + scale * boxMargin);
+        mesh.position.y = this.position.y  * (scale + scale * boxMargin);
+        mesh.position.z = this.position.z  * (scale + scale * boxMargin);
 
         return mesh;
     };
